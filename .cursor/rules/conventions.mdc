@@ -9,7 +9,7 @@ alwaysApply: true
 
 ## Технологии
 
-- Python 3.12+, `uv` для зависимостей, `aiogram` 3.x, `openai` SDK (OpenRouter)
+- Python 3.9+, `uv` для зависимостей, `aiogram` 3.x, `openai` SDK (OpenRouter)
 - Конфигурация только через `.env` / `python-dotenv`
 - Логирование: stdlib `logging`, только в stdout
 

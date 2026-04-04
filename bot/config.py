@@ -19,6 +19,7 @@ class Config(BaseSettings):
     system_prompt_path: str = "bot/prompts/system.txt"
     max_history_size: int = 20
     log_level: str = "INFO"
+    proxy_url: str = ""
 
     def resolved_system_prompt_path(self) -> Path:
         return Path(self.system_prompt_path).resolve()

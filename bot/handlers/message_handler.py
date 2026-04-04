@@ -2,7 +2,6 @@ import logging
 
 from aiogram import F, Router
 from aiogram.enums import ChatAction
-from aiogram.filters import Command
 from aiogram.types import Message
 
 from bot.services.llm_service import LlmService
@@ -14,7 +13,7 @@ logger = logging.getLogger(__name__)
 def build_message_router(llm: LlmService) -> Router:
     router = Router()
 
-    @router.message(F.text, ~Command())
+    @router.message(F.text & ~F.text.startswith("/"))
     async def handle_text(message: Message) -> None:
         if message.chat is None or message.text is None:
             return

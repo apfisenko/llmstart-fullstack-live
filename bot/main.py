@@ -2,6 +2,7 @@ import asyncio
 import logging
 
 from aiogram import Bot, Dispatcher
+from aiogram.client.session.aiohttp import AiohttpSession
 
 from bot.config import Config
 from bot.handlers.command_handler import build_command_router
@@ -27,7 +28,8 @@ async def main() -> None:
     system_prompt = prompt_path.read_text(encoding="utf-8")
     llm = LlmService(config, system_prompt)
 
-    bot = Bot(token=config.telegram_token)
+    session = AiohttpSession(proxy=config.proxy_url or None)
+    bot = Bot(token=config.telegram_token, session=session)
     dp = Dispatcher()
     dp.include_router(build_command_router(llm))
     dp.include_router(build_message_router(llm))

@@ -1,6 +1,7 @@
 import logging
-from typing import Any
+from typing import Any, Optional
 
+import httpx
 from openai import AsyncOpenAI
 
 from bot.config import Config
@@ -14,10 +15,14 @@ class LlmService:
         self._config = config
         self._system_prompt = system_prompt
         self._history: dict[int, list[dict[str, str]]] = {}
+        http_client: Optional[httpx.AsyncClient] = (
+            httpx.AsyncClient(proxy=config.proxy_url) if config.proxy_url else None
+        )
         self._client = AsyncOpenAI(
             api_key=config.openrouter_api_key,
             base_url=config.openrouter_base_url,
             timeout=config.openrouter_timeout,
+            http_client=http_client,
         )
 
     def reset_history(self, chat_id: int) -> None:

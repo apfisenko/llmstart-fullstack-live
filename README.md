@@ -78,9 +78,10 @@ LLM • Cursor • Backend/API • БД • Frontend • DevOps • Production d
 
 В репозитории — бот-помощник по программе и материалам (см. [docs/idea.md](docs/idea.md), [docs/vision.md](docs/vision.md)).
 
+**Требования:** Python 3.9+.
+
 **Запуск (из корня репозитория):**
 
 1. Скопировать `.env.example` в `.env`, задать `TELEGRAM_TOKEN` и `OPENROUTER_API_KEY`.
 2. Установить зависимости: `uv sync --all-groups` (или свой способ по `pyproject.toml`).
 3. Запуск: `make run` или `uv run python -m bot.main`.
-
