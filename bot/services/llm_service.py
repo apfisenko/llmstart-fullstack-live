@@ -1,4 +1,5 @@
 import logging
+from datetime import datetime
 from typing import Any, Optional
 
 import httpx
@@ -44,8 +45,13 @@ class LlmService:
         messages.append({"role": "user", "content": text})
         self._trim(chat_id)
 
+        now = datetime.now()
+        system_content = (
+            f"Сегодня: {now.strftime('%A, %d %B %Y, %H:%M')} (московское время).\n\n"
+            + self._system_prompt
+        )
         api_messages: list[dict[str, Any]] = [
-            {"role": "system", "content": self._system_prompt},
+            {"role": "system", "content": system_content},
             *messages,
         ]
 
