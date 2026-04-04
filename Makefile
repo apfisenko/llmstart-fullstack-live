@@ -1,15 +1,15 @@
 .PHONY: install run lint format
 
 install:
-	uv sync --all-groups
+	python -m pip install -r requirements.txt
 
 run:
-	uv run python -m bot.main
+	python -m bot.main
 
 lint:
-	uv run ruff check .
-	uv run ruff format --check .
+	python -m ruff check .
+	python -m ruff format --check .
 
 format:
-	uv run ruff format .
-	uv run ruff check --fix .
+	python -m ruff format .
+	python -m ruff check --fix .

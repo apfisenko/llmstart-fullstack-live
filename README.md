@@ -83,5 +83,8 @@ LLM • Cursor • Backend/API • БД • Frontend • DevOps • Production d
 **Запуск (из корня репозитория):**
 
 1. Скопировать `.env.example` в `.env`, задать `TELEGRAM_TOKEN` и `OPENROUTER_API_KEY`.
-2. Установить зависимости: `uv sync --all-groups` (или свой способ по `pyproject.toml`).
-3. Запуск: `make run` или `uv run python -m bot.main`.
+2. Установить зависимости: `pip install -r requirements.txt`.
+3. Запуск:
+   - Linux/macOS (с `make`): `make run`
+   - Windows PowerShell: `.\run.ps1 run`
+   - Напрямую: `python -m bot.main`
