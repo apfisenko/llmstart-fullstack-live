@@ -1,0 +1,476 @@
+openapi: 3.0.3
+info:
+  title: LLM Start Backend API
+  version: "1.0.0"
+  description: |
+    Черновик публичного HTTP API v1. После появления приложения FastAPI источником правды становится сгенерированная схема
+    (`/openapi.json`); этот файл — контрактная опора до и на время задач 03–05.
+
+servers:
+  - url: https://api.example.com
+    description: Production (пример)
+  - url: http://127.0.0.1:8000
+    description: Локальная разработка
+
+tags:
+  - name: dialogues
+    description: Диалог с ассистентом (LLM на стороне backend)
+  - name: progress
+    description: Этапы и фиксация прогресса
+  - name: cohorts
+    description: Поток и агрегированный обзор
+
+paths:
+  /api/v1/cohorts/{cohort_id}/dialogues/messages:
+    post:
+      tags: [dialogues]
+      summary: Отправить сообщение в диалог (создать или продолжить)
+      description: |
+        Создаёт диалог при первом обращении или продолжает существующий. Сохраняет реплики пользователя и ассистента
+        согласно доменной модели (`Dialogue`, `DialogueMessage`). Вызов LLM выполняется только на сервере.
+      operationId: postCohortDialogueMessage
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/CohortId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PostDialogueMessageRequest"
+      responses:
+        "200":
+          description: Ответ ассистента с идентификаторами сообщений
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PostDialogueMessageResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "422":
+          $ref: "#/components/responses/UnprocessableEntity"
+        "502":
+          $ref: "#/components/responses/BadGatewayLlm"
+        "503":
+          $ref: "#/components/responses/ServiceUnavailableLlm"
+
+  /api/v1/dialogues/{dialogue_id}/reset:
+    post:
+      tags: [dialogues]
+      summary: Сбросить контекст диалога
+      description: |
+        Аналог команды `/reset` в боте. Идемпотентность на уровне продукта — повторный сброс не ломает состояние;
+        сервер может архивировать текущий диалог и создавать новый при следующем сообщении.
+      operationId: postDialogueReset
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/DialogueId"
+      responses:
+        "204":
+          description: Контекст сброшен
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /api/v1/cohorts/{cohort_id}/progress-checkpoints:
+    get:
+      tags: [progress]
+      summary: Список этапов прогресса потока
+      operationId: listProgressCheckpoints
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/CohortId"
+      responses:
+        "200":
+          description: Упорядоченный список этапов
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProgressCheckpointListResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /api/v1/cohorts/{cohort_id}/memberships/{membership_id}/progress-records/{checkpoint_id}:
+    put:
+      tags: [progress]
+      summary: Создать или обновить отметку прогресса по этапу
+      description: |
+        Upsert по паре (участие, этап). Соответствует сущности `ProgressRecord` в data-model.
+      operationId: putProgressRecord
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/CohortId"
+        - $ref: "#/components/parameters/MembershipId"
+        - $ref: "#/components/parameters/CheckpointId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PutProgressRecordRequest"
+      responses:
+        "200":
+          description: Отметка сохранена
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProgressRecordResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "422":
+          $ref: "#/components/responses/UnprocessableEntity"
+
+  /api/v1/cohorts/{cohort_id}/summary:
+    get:
+      tags: [cohorts]
+      summary: Агрегированный срез по потоку (преподаватель)
+      description: |
+        Обзор участников и прогресса по этапам в рамках одного потока. Минимальный набор полей в v1;
+        расширение — без ломки контракта (новые поля).
+      operationId: getCohortSummary
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/CohortId"
+      responses:
+        "200":
+          description: Сводка по потоку
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CohortSummaryResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: |
+        MVP: токен клиента (бот/веб) или внутренний ключ — см. `docs/tasks/impl/.../task-02-contracts/plan.md`.
+
+  parameters:
+    CohortId:
+      name: cohort_id
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    DialogueId:
+      name: dialogue_id
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    MembershipId:
+      name: membership_id
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    CheckpointId:
+      name: checkpoint_id
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+
+  schemas:
+    ClientChannel:
+      type: string
+      enum: [telegram, web]
+      description: Канал клиента (диалог в data-model)
+
+    PostDialogueMessageRequest:
+      type: object
+      required:
+        - membership_id
+        - channel
+        - content
+      properties:
+        membership_id:
+          type: string
+          format: uuid
+          description: Идентификатор `CohortMembership` инициатора
+        dialogue_id:
+          type: string
+          format: uuid
+          nullable: true
+          description: Если null — сервер выбирает/создаёт активный диалог для пары (участие, канал)
+        channel:
+          $ref: "#/components/schemas/ClientChannel"
+        content:
+          type: string
+          description: Текст пользователя (не логировать в открытом виде на стороне клиента в проде)
+
+    PostDialogueMessageResponse:
+      type: object
+      required:
+        - dialogue_id
+        - user_message_id
+        - assistant_message
+      properties:
+        dialogue_id:
+          type: string
+          format: uuid
+        user_message_id:
+          type: string
+          format: uuid
+        assistant_message:
+          type: object
+          required:
+            - id
+            - content
+            - created_at
+          properties:
+            id:
+              type: string
+              format: uuid
+            content:
+              type: string
+            created_at:
+              type: string
+              format: date-time
+
+    ProgressCheckpointItem:
+      type: object
+      required:
+        - id
+        - code
+        - title
+        - sort_order
+        - required
+      properties:
+        id:
+          type: string
+          format: uuid
+        code:
+          type: string
+        title:
+          type: string
+        sort_order:
+          type: integer
+        required:
+          type: boolean
+
+    ProgressCheckpointListResponse:
+      type: object
+      required:
+        - items
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/ProgressCheckpointItem"
+
+    ProgressStatus:
+      type: string
+      enum: [not_started, in_progress, completed, skipped]
+      description: Статус фиксации прогресса (согласован с `data-model.md`)
+
+    PutProgressRecordRequest:
+      type: object
+      required:
+        - status
+      properties:
+        status:
+          $ref: "#/components/schemas/ProgressStatus"
+        comment:
+          type: string
+          nullable: true
+          maxLength: 2000
+
+    ProgressRecordResponse:
+      type: object
+      required:
+        - id
+        - cohort_id
+        - membership_id
+        - checkpoint_id
+        - status
+        - updated_at
+      properties:
+        id:
+          type: string
+          format: uuid
+        cohort_id:
+          type: string
+          format: uuid
+        membership_id:
+          type: string
+          format: uuid
+        checkpoint_id:
+          type: string
+          format: uuid
+        status:
+          $ref: "#/components/schemas/ProgressStatus"
+        comment:
+          type: string
+          nullable: true
+        updated_at:
+          type: string
+          format: date-time
+
+    CohortSummaryParticipant:
+      type: object
+      required:
+        - membership_id
+        - user_id
+        - role
+      properties:
+        membership_id:
+          type: string
+          format: uuid
+        user_id:
+          type: string
+          format: uuid
+        role:
+          type: string
+          enum: [student, teacher]
+        display_name:
+          type: string
+          nullable: true
+        progress:
+          type: object
+          additionalProperties:
+            $ref: "#/components/schemas/ProgressStatus"
+          description: Ключ — `checkpoint_id` (UUID строкой), значение — статус
+
+    CohortSummaryResponse:
+      type: object
+      required:
+        - cohort_id
+        - checkpoints
+        - participants
+      properties:
+        cohort_id:
+          type: string
+          format: uuid
+        cohort_title:
+          type: string
+          nullable: true
+        checkpoints:
+          type: array
+          items:
+            $ref: "#/components/schemas/ProgressCheckpointItem"
+        participants:
+          type: array
+          items:
+            $ref: "#/components/schemas/CohortSummaryParticipant"
+
+    ErrorResponse:
+      type: object
+      required:
+        - error
+      properties:
+        error:
+          type: object
+          required:
+            - code
+            - message
+          properties:
+            code:
+              type: string
+              example: VALIDATION_ERROR
+            message:
+              type: string
+            details:
+              description: Опционально — поля валидации или машиночитаемые детали
+              oneOf:
+                - type: array
+                  items:
+                    type: object
+                - type: object
+
+  responses:
+    Unauthorized:
+      description: Нет или неверный токен
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+          example:
+            error:
+              code: UNAUTHORIZED
+              message: Authentication required
+
+    Forbidden:
+      description: Доступ запрещён для данного участника/роли
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+
+    NotFound:
+      description: Ресурс не найден
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+
+    Conflict:
+      description: Конфликт домена (например, нарушение уникальности при альтернативной семантике POST)
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+
+    UnprocessableEntity:
+      description: Тело не проходит схему (в FastAPI часто 422)
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+
+    BadGatewayLlm:
+      description: Ответ провайдера LLM некорректен или шлюз недоступен
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+          example:
+            error:
+              code: LLM_BAD_GATEWAY
+              message: Assistant is temporarily unavailable
+
+    ServiceUnavailableLlm:
+      description: Провайдер LLM недоступен (таймаут, перегруз)
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+          example:
+            error:
+              code: LLM_UNAVAILABLE
+              message: Assistant is temporarily unavailable

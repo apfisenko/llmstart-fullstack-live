@@ -53,6 +53,15 @@ flowchart LR
 
 ## Быстрый старт
 
-**Текущая версия (итерация 1 — бот):** скопировать `.env.example` → `.env`, задать `TELEGRAM_TOKEN` и `OPENROUTER_API_KEY`, затем `python -m bot.main`.
+**Telegram-бот (итерация 1):** скопировать `.env.example` → `.env`, задать `TELEGRAM_TOKEN` и `OPENROUTER_API_KEY`, затем `python -m bot.main`.
+
+**Backend API (каркас):** в `.env` задать `BACKEND_API_CLIENT_TOKEN` (см. `.env.example`). Из каталога `backend/`:
+
+```bash
+uv sync
+uv run uvicorn app.main:app --host 127.0.0.1 --port 8000
+```
+
+Проверка: `GET http://127.0.0.1:8000/health` → `{"status":"ok"}`; OpenAPI: `/docs`. Подробнее — [backend/README.md](backend/README.md).
 
 Полная инструкция по запуску всего стека появится после итерации 6.
