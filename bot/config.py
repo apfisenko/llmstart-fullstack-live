@@ -1,25 +1,86 @@
-from pathlib import Path
+from __future__ import annotations
 
-from pydantic import Field
+from pathlib import Path
+from typing import Any, Optional
+from uuid import UUID
+
+from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+# Репозиторий: bot/config.py → родитель каталога bot/
+_REPO_ROOT = Path(__file__).resolve().parents[1]
+
+
+def _env_files_for_bot() -> tuple[str, ...]:
+    """Порядок: сначала backend/.env, затем корневой .env — дубликаты перекрывает корень."""
+    paths: list[str] = []
+    backend_env = _REPO_ROOT / "backend" / ".env"
+    root_env = _REPO_ROOT / ".env"
+    if backend_env.is_file():
+        paths.append(str(backend_env))
+    if root_env.is_file():
+        paths.append(str(root_env))
+    if not paths:
+        paths.append(str(root_env))
+    return tuple(paths)
 
 
 class Config(BaseSettings):
     model_config = SettingsConfigDict(
-        env_file=".env",
+        env_file=_env_files_for_bot(),
         env_file_encoding="utf-8",
         extra="ignore",
     )
 
     telegram_token: str = Field(..., description="Telegram Bot API token")
-    openrouter_api_key: str = Field(..., description="OpenRouter API key")
-    openrouter_model: str = "openai/gpt-4o-mini"
-    openrouter_base_url: str = "https://openrouter.ai/api/v1"
-    openrouter_timeout: int = 30
-    system_prompt_path: str = "bot/prompts/system.txt"
-    max_history_size: int = 20
-    log_level: str = "INFO"
-    proxy_url: str = ""
 
-    def resolved_system_prompt_path(self) -> Path:
-        return Path(self.system_prompt_path).resolve()
+    @field_validator("telegram_token", mode="before")
+    @classmethod
+    def telegram_token_non_empty(cls, value: Any) -> Any:
+        if isinstance(value, str) and not value.strip():
+            raise ValueError(
+                "TELEGRAM_TOKEN пустой: задайте токен в корневом .env или backend/.env "
+                f"(ожидаемый каталог репозитория: {_REPO_ROOT})."
+            )
+        return value
+
+    backend_host: str = "127.0.0.1"
+    backend_port: int = 8000
+    backend_base_url: str = Field(
+        default="",
+        description="Полный URL backend; если пусто — http://BACKEND_HOST:BACKEND_PORT",
+    )
+    backend_api_client_token: str = ""
+    backend_request_timeout: int = 120
+    cohort_id: Optional[UUID] = Field(
+        default=None,
+        description="UUID потока (cohort) в backend",
+    )
+    membership_id: Optional[UUID] = Field(
+        default=None,
+        description="UUID участия (cohort_memberships) для вызовов API",
+    )
+    log_level: str = "INFO"
+    proxy_url: str = Field(
+        default="",
+        description="Прокси только для Telegram (aiogram); не используется для запросов к backend.",
+    )
+    backend_http_proxy: str = Field(
+        default="",
+        description=(
+            "Необязательно: прокси только для httpx → backend (если пусто — прямое подключение)."
+        ),
+    )
+
+    @field_validator("cohort_id", "membership_id", mode="before")
+    @classmethod
+    def empty_env_uuid_to_none(cls, value: Any) -> Any:
+        if value is None or (isinstance(value, str) and not value.strip()):
+            return None
+        return value
+
+    def resolved_backend_base_url(self) -> str:
+        base = self.backend_base_url.strip()
+        if base:
+            return base.rstrip("/")
+        return f"http://{self.backend_host}:{self.backend_port}"

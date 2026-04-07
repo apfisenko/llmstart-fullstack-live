@@ -28,11 +28,11 @@
 | 01 | Выбор backend-стека, ADR/соглашения, обновление `conventions.mdc` | [1](#block-backend-1) | ✅ Done | [план](impl/backend/iteration-2-backend-api/tasks/task-01-stack/plan.md) \| [summary](impl/backend/iteration-2-backend-api/tasks/task-01-stack/summary.md) |
 | 02 | Проектирование API-контрактов (ассистент + фиксация ДЗ) | [1](#block-backend-1) | ✅ Done | [план](impl/backend/iteration-2-backend-api/tasks/task-02-contracts/plan.md) \| [summary](impl/backend/iteration-2-backend-api/tasks/task-02-contracts/summary.md) |
 | 03 | Поднятие каркаса backend-сервиса (`pyproject.toml`, `uv`, структура `backend/app/`, health, конфиг) | [2](#block-backend-2) | ✅ Done | [план](impl/backend/iteration-2-backend-api/tasks/task-03-scaffold/plan.md) \| [summary](impl/backend/iteration-2-backend-api/tasks/task-03-scaffold/summary.md) |
-| 04 | Базовые API-тесты сценариев, паритетных с текущим ботом | [2](#block-backend-2) | 📋 Planned | [план](impl/backend/iteration-2-backend-api/tasks/task-04-api-tests/plan.md) \| [summary](impl/backend/iteration-2-backend-api/tasks/task-04-api-tests/summary.md) |
-| 05 | Реализация endpoint'ов, логики, персистентности (согласно `data-model.md`) | [3](#block-backend-3) | 📋 Planned | [план](impl/backend/iteration-2-backend-api/tasks/task-05-implementation/plan.md) \| [summary](impl/backend/iteration-2-backend-api/tasks/task-05-implementation/summary.md) |
-| 06 | Документация backend: запуск, env, OpenAPI, команды | [4](#block-backend-4) | 📋 Planned | [план](impl/backend/iteration-2-backend-api/tasks/task-06-docs/plan.md) \| [summary](impl/backend/iteration-2-backend-api/tasks/task-06-docs/summary.md) |
-| 07 | Рефакторинг бота: работа через backend API | [5](#block-backend-5) | 📋 Planned | [план](impl/backend/iteration-2-backend-api/tasks/task-07-bot-refactor/plan.md) \| [summary](impl/backend/iteration-2-backend-api/tasks/task-07-bot-refactor/summary.md) |
-| 08 | Базовое качество: линт, тесты, CI, актуализация `Makefile` | [6](#block-backend-6) | 📋 Planned | [план](impl/backend/iteration-2-backend-api/tasks/task-08-quality/plan.md) \| [summary](impl/backend/iteration-2-backend-api/tasks/task-08-quality/summary.md) |
+| 04 | Базовые API-тесты сценариев, паритетных с текущим ботом | [2](#block-backend-2) | ✅ Done | [план](impl/backend/iteration-2-backend-api/tasks/task-04-api-tests/plan.md) \| [summary](impl/backend/iteration-2-backend-api/tasks/task-04-api-tests/summary.md) |
+| 05 | Реализация endpoint'ов, логики, персистентности (согласно `data-model.md`) | [3](#block-backend-3) | ✅ Done | [план](impl/backend/iteration-2-backend-api/tasks/task-05-implementation/plan.md) \| [summary](impl/backend/iteration-2-backend-api/tasks/task-05-implementation/summary.md) |
+| 06 | Документация backend: запуск, env, OpenAPI, команды | [4](#block-backend-4) | ✅ Done | [план](impl/backend/iteration-2-backend-api/tasks/task-06-docs/plan.md) \| [summary](impl/backend/iteration-2-backend-api/tasks/task-06-docs/summary.md) |
+| 07 | Рефакторинг бота: работа через backend API | [5](#block-backend-5) | ✅ Done | [план](impl/backend/iteration-2-backend-api/tasks/task-07-bot-refactor/plan.md) \| [summary](impl/backend/iteration-2-backend-api/tasks/task-07-bot-refactor/summary.md) |
+| 08 | Базовое качество: линт, тесты, CI, актуализация `Makefile` | [6](#block-backend-6) | ✅ Done | [план](impl/backend/iteration-2-backend-api/tasks/task-08-quality/plan.md) \| [summary](impl/backend/iteration-2-backend-api/tasks/task-08-quality/summary.md) |
 
 ---
 
@@ -167,7 +167,7 @@
 | # | Критерий | Способ проверки |
 |---|----------|-----------------|
 | 1 | Репозиторий собирается (`uv sync` или согласованная команда); структура соответствует `vision.md` и `conventions.mdc` | `cd backend && uv sync`; сверить дерево с [`vision.md`](../vision.md) и `conventions.mdc` |
-| 2 | Приложение стартует; при неполном `.env` — понятная ошибка | Запуск без обязательных переменных из [`.env.example`](../../.env.example) |
+| 2 | Приложение стартует с дефолтами `Settings`; при появлении обязательных полей без `.env` — понятная ошибка pydantic | Запуск `uvicorn` без секции backend в `.env` |
 | 3 | Линт по backend проходит (или зафиксировано исключение в задаче 08) | `uv run ruff check app` в `backend/` |
 | 4 | Health отвечает ожидаемым телом | Пользователь: по `README` / `.env.example` поднять backend; `curl` или браузер на `/health` |
 
@@ -180,7 +180,7 @@
 
 ---
 
-### Задача 04: Базовые API-тесты (паритет с ботом) 📋
+### Задача 04: Базовые API-тесты (паритет с ботом) ✅
 
 #### Цель
 
@@ -188,9 +188,9 @@
 
 #### Состав работ
 
-- [ ] Инвентаризация текущих сценариев бота (handlers → ожидаемые вызовы backend)
-- [ ] Написать тесты: happy path + ошибка валидации + (по возможности) сбой LLM без утечки текста в логи assertion'ом
-- [ ] Подключить pytest в workspace, если ещё не подключён; целевые пути — `backend/tests/` (или согласованный каталог)
+- [x] Инвентаризация текущих сценариев бота (handlers → ожидаемые вызовы backend)
+- [x] Написать тесты: happy path + ошибка валидации + (по возможности) сбой LLM без утечки текста в логи assertion'ом
+- [x] Подключить pytest в workspace, если ещё не подключён; целевые пути — `backend/tests/` (или согласованный каталог)
 
 #### Skills
 
@@ -228,7 +228,7 @@
 
 ## Блок 3 — Задача 05: реализация
 
-### Задача 05: Основные endpoint'ы и серверная логика 📋
+### Задача 05: Основные endpoint'ы и серверная логика ✅
 
 #### Цель
 
@@ -236,11 +236,11 @@
 
 #### Состав работ
 
-- [ ] Реализовать маршруты и сервисы диалога (LLM-клиент в `infrastructure/`, вызовы только отсюда)
-- [ ] Реализовать маршруты фиксации прогресса / домашнего задания в терминах доменной модели
-- [ ] Подключить PostgreSQL, миграции, ORM-модели — **или** зафиксировать в summary временную реализацию (in-memory) с явной связью с [`tasklist-database.md`](tasklist-database.md), если БД вынесена отдельной итерацией (не оставлять неявного долга)
-- [ ] Обновить [`docs/data-model.md`](../data-model.md) при расхождении с фактической схемой
-- [ ] Обновить [`docs/integrations.md`](../integrations.md) — детали LLM и БД на стороне backend
+- [x] Реализовать маршруты и сервисы диалога (LLM-клиент в `infrastructure/`, вызовы только отсюда)
+- [x] Реализовать маршруты фиксации прогресса / домашнего задания в терминах доменной модели
+- [x] Подключить PostgreSQL, миграции, ORM-модели — **или** зафиксировать в summary временную реализацию (in-memory) с явной связью с [`tasklist-database.md`](tasklist-database.md), если БД вынесена отдельной итерацией (не оставлять неявного долга)
+- [x] Сверка с [`docs/data-model.md`](../data-model.md): расхождений со схемой БД нет, файл не менялся
+- [x] Обновить [`docs/integrations.md`](../integrations.md) — детали LLM и БД на стороне backend
 
 #### Актуализация документации (по необходимости)
 
@@ -280,7 +280,7 @@
 
 ## Блок 4 — Задача 06: документация backend
 
-### Задача 06: Документирование backend 📋
+### Задача 06: Документирование backend ✅
 
 #### Цель
 
@@ -288,11 +288,11 @@
 
 #### Состав работ
 
-- [ ] Обновить [`README.md`](../../README.md): установка, запуск backend, тесты, линт
-- [ ] Дополнить [`.env.example`](../../.env.example) всеми переменными backend
-- [ ] Обновить [`docs/integrations.md`](../integrations.md) — потоки данных и секреты
-- [ ] Обновить [`docs/plan.md`](../plan.md) — статус итерации 2 при завершении
-- [ ] Указать, где смотреть OpenAPI (встроенный `/docs` или `/openapi.json`)
+- [x] Обновить [`README.md`](../../README.md): установка, запуск backend, тесты, линт
+- [x] Дополнить [`.env.example`](../../.env.example) всеми переменными backend
+- [x] Обновить [`docs/integrations.md`](../integrations.md) — потоки данных и секреты
+- [x] Обновить [`docs/plan.md`](../plan.md) — статус итерации 2 при завершении
+- [x] Указать, где смотреть OpenAPI (встроенный `/docs` или `/openapi.json`)
 
 #### Критерии готовности (DoD)
 
@@ -326,7 +326,7 @@
 
 ## Блок 5 — Задача 07: клиент бота
 
-### Задача 07: Рефакторинг бота под backend API 📋
+### Задача 07: Рефакторинг бота под backend API ✅
 
 > Связана с **итерацией 5** [`plan.md`](../plan.md); выполняется после готовности API и документации.
 
@@ -336,11 +336,11 @@
 
 #### Состав работ
 
-- [ ] Реализовать HTTP-клиент к backend в слое сервисов бота
-- [ ] Перевести обработчики диалога и фиксации результата на API
-- [ ] Удалить/сузить прямой LLM-клиент из бота
-- [ ] Обновить [`.env.example`](../../.env.example) — URL backend, ключи клиента
-- [ ] Обновить [`docs/integrations.md`](../integrations.md) и при необходимости [`README.md`](../../README.md)
+- [x] Реализовать HTTP-клиент к backend в слое сервисов бота
+- [x] Перевести обработчики диалога на API (фиксация прогресса в UI бота отсутствует)
+- [x] Удалить/сузить прямой LLM-клиент из бота
+- [x] Обновить [`.env.example`](../../.env.example) — URL backend, ключи клиента
+- [x] Обновить [`docs/integrations.md`](../integrations.md) и при необходимости [`README.md`](../../README.md)
 
 #### Критерии готовности (DoD)
 
@@ -374,7 +374,7 @@
 
 ## Блок 6 — Задача 08: качество и инженерные практики
 
-### Задача 08: Базовое качество и инженерные практики 📋
+### Задача 08: Базовое качество и инженерные практики ✅
 
 #### Цель
 
@@ -382,10 +382,10 @@
 
 #### Состав работ
 
-- [ ] Единые цели: `make lint`, `make test`, `make format` (или согласованные имена) — охватывают backend и при необходимости бот
-- [ ] Подключить проверки в CI при наличии пайплайна; иначе зафиксировать в `README` обязательную локальную проверку перед PR
-- [ ] Актуализировать [`docs/plan.md`](../plan.md) и [`docs/vision.md`](../vision.md) (§10–11) при изменении практик
-- [ ] Ретроспектива контрактов: при необходимости вынести правила версионирования API в отдельный файл и ссылку из [`docs/integrations.md`](../integrations.md)
+- [x] Единые цели: `make lint`, `make test`, `make format` (или согласованные имена) — охватывают backend и при необходимости бот
+- [x] Подключить проверки в CI при наличии пайплайна; иначе зафиксировать в `README` обязательную локальную проверку перед PR
+- [x] Актуализировать [`docs/plan.md`](../plan.md) и [`docs/vision.md`](../vision.md) (§10–11) при изменении практик
+- [x] Ретроспектива контрактов: при необходимости вынести правила версионирования API в отдельный файл и ссылку из [`docs/integrations.md`](../integrations.md) — отдельный файл не заведён; источник по-прежнему [`integrations.md`](../integrations.md) + OpenAPI (см. [summary задачи](impl/backend/iteration-2-backend-api/tasks/task-08-quality/summary.md))
 
 #### Критерии готовности (DoD)
 

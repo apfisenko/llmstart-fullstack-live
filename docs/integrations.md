@@ -44,11 +44,27 @@ flowchart TB
 |----------|----------|
 | Базовый URL | Задаётся средой (например `http://127.0.0.1:8000` локально); в проде — HTTPS за reverse-proxy |
 | Версия | Префикс пути **`/api/v1/`**; ломающие изменения — только в новой мажорной версии API |
-| Черновик схем | [`docs/api/openapi-v1.yaml`](api/openapi-v1.yaml) — опора до и во время внедрения FastAPI |
-| Живая схема | После появления сервиса: **`GET /openapi.json`** (и при включении — UI **`/docs`**) на том же хосте, что и backend |
+| Черновик схем | [`docs/api/openapi-v1.yaml`](api/openapi-v1.yaml) — опора для контракта и согласования с FastAPI |
+| Живая схема | На том же хосте, что и backend: **`GET /openapi.json`**, UI **`/docs`** (Swagger), **`/redoc`** (ReDoc) |
 | Текстовая сводка контракта | [`docs/tech/api-contracts.md`](tech/api-contracts.md) |
 
 Политика ошибок, идентификация на MVP и соответствие доменной модели — в [task-02-contracts/plan.md](tasks/impl/backend/iteration-2-backend-api/tasks/task-02-contracts/plan.md) и в [`docs/tech/api-contracts.md`](tech/api-contracts.md). Дублировать полный список полей здесь не требуется.
+
+**Аутентификация клиентов:** в [`docs/api/openapi-v1.yaml`](api/openapi-v1.yaml) зафиксирована схема `bearerAuth`. Опционально `BACKEND_API_CLIENT_TOKEN` в `Settings`: если задан, для `/api/v1/*` требуется `Authorization: Bearer` с этим значением (см. [`backend/.env.example`](../backend/.env.example)).
+
+**Секреты (только окружение, не репозиторий):** `TELEGRAM_TOKEN` — бот; `OPENROUTER_API_KEY` — вызовы LLM **только из backend**; опционально `BACKEND_API_CLIENT_TOKEN` — доступ клиентов к `/api/v1/*` (значение должно совпадать с настройкой backend). Шаблоны: корневой [`.env.example`](../.env.example) — переменные бота; [`backend/.env.example`](../backend/.env.example) — процесс backend; при одном `.env` в корне объединяют оба файла.
+
+---
+
+## Backend и LLM
+
+**Текущее состояние:** процесс `backend/` вызывает OpenRouter (или иной OpenAI-совместимый endpoint) из [`backend/app/infrastructure/llm_assistant.py`](../backend/app/infrastructure/llm_assistant.py), если задан `OPENROUTER_API_KEY`; иначе в тестах и на локалке без ключа используется заглушка ответа. Telegram-бот (`bot/`) — **тонкий клиент**: HTTP к `/api/v1/` (см. задача **07** в [tasklist-backend](tasks/tasklist-backend.md)); прямого вызова LLM из бота нет.
+
+**Персистентность:** целевая СУБД — **PostgreSQL** ([`adr/adr-001-database.md`](adr/adr-001-database.md)). Локально по умолчанию может использоваться **SQLite**, если `DATABASE_URL` пустой или не задан (`Settings` в backend). Для PostgreSQL задайте `DATABASE_URL` (async, `postgresql+asyncpg://...`) — см. [`backend/.env.example`](../backend/.env.example). Миграции Alembic: из корня репозитория `make migrate-backend` или `cd backend && uv run alembic upgrade head` (нужен dev extra с `psycopg2` для Alembic).
+
+**Конфигурация LLM на стороне backend:** `OPENROUTER_API_KEY`, `OPENROUTER_BASE_URL`, `OPENROUTER_MODEL`, `OPENROUTER_TIMEOUT`, `SYSTEM_PROMPT_PATH`, опционально `PROXY_URL` — в `Settings` и в [`backend/.env.example`](../backend/.env.example).
+
+**Поведение при сбоях и логи:** логировать тип ошибки, HTTP-код/latency провайдера, correlation/request id; **не** писать в лог тексты пользовательских сообщений и ответов модели ([`vision.md`](vision.md), раздел 15). Клиенту API — коды **502** (`LLM_BAD_GATEWAY`) и **503** (`LLM_UNAVAILABLE`) по контракту, без внутренних деталей провайдера.
 
 ---
 

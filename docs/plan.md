@@ -27,7 +27,7 @@
 | Итерация | Название | Цель | Статус | Tasklist |
 |----------|----------|------|--------|----------|
 | 1 | MVP: Telegram-бот | Рабочий бот с LLM, история в памяти | ✅ Done | [tasklist-bot](tasks/tasklist-bot.md) |
-| 2 | Backend API | Полный API: scaffold, LLM, прогресс, поток | 📋 Planned | [tasklist-backend](tasks/tasklist-backend.md) |
+| 2 | Backend API | Полный API: scaffold, LLM, прогресс, поток | ✅ Done | [tasklist-backend](tasks/tasklist-backend.md) |
 | 3 | База данных | PostgreSQL, схема, миграции | 📋 Planned | [tasklist-database](tasks/tasklist-database.md) |
 | 4 | Реализация Frontend | Веб-кабинет студента и преподавателя | 📋 Planned | [tasklist-frontend](tasks/tasklist-frontend.md) |
 | 5 | Интеграция клиентов | Бот и веб работают через backend API | 📋 Planned | [tasklist-bot](tasks/tasklist-bot.md) + [tasklist-frontend](tasks/tasklist-frontend.md) |
@@ -54,13 +54,15 @@
 
 **Полезный результат:** участники курса могут задавать вопросы ассистенту в Telegram.
 
-**Артефакты:** `bot/` (`main.py`, `config.py`, `handlers/`, `services/llm_service.py`).
+**Артефакты:** `bot/` (`main.py`, `config.py`, `handlers/`, `services/backend_assistant.py`).
 
 ---
 
-### Итерация 2: Backend API
+### Итерация 2: Backend API ✅
 
 **Цель:** реализовать полный backend API — структура проекта, конфигурация, диалог с LLM, прогресс и поток.
+
+**Статус по [tasklist-backend](tasks/tasklist-backend.md):** итерация закрыта, включая задачу **08** (линт, тесты, GitHub Actions CI, единый `Makefile`). Задача **07** относится к итерации 5 (бот как клиент API) и ведётся по своему tasklist.
 
 **Критерии завершения (DoD):**
 

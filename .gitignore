@@ -1,4 +1,5 @@
 .env
+llmstart_local.sqlite
 .venv/
 venv/
 __pycache__/

@@ -4,7 +4,7 @@ from aiogram import Router
 from aiogram.filters import Command
 from aiogram.types import Message
 
-from bot.services.llm_service import LlmService
+from bot.services.backend_assistant import BackendAssistantService
 from bot.utils.logger import hash_chat_id
 
 logger = logging.getLogger(__name__)
@@ -19,7 +19,7 @@ WELCOME = (
 )
 
 
-def build_command_router(llm: LlmService) -> Router:
+def build_command_router(llm: BackendAssistantService) -> Router:
     router = Router()
 
     @router.message(Command("start"))
@@ -44,7 +44,7 @@ def build_command_router(llm: LlmService) -> Router:
             return
         ch = hash_chat_id(message.chat.id)
         logger.warning("history reset chat_hash=%s", ch)
-        llm.reset_history(message.chat.id)
+        await llm.reset_history(message.chat.id)
         await message.answer("История диалога сброшена.")
 
     return router

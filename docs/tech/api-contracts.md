@@ -22,9 +22,11 @@
 |-------|------|------------|
 | `POST` | `/api/v1/cohorts/{cohort_id}/dialogues/messages` | Сообщение в диалог: создать/продолжить `Dialogue`, сохранить `DialogueMessage`, вызвать LLM, вернуть ответ ассистента |
 | `POST` | `/api/v1/dialogues/{dialogue_id}/reset` | Сброс контекста диалога (аналог `/reset` в боте) |
+| `POST` | `/api/v1/assistant/guest/messages` | Временный диалог без БД: LLM + история в памяти процесса (`guest_session_key` от клиента) |
+| `POST` | `/api/v1/assistant/guest/reset` | Сброс гостевой сессии по `guest_session_key` |
 | `GET` | `/api/v1/cohorts/{cohort_id}/progress-checkpoints` | Список этапов `ProgressCheckpoint` для потока |
 | `PUT` | `/api/v1/cohorts/{cohort_id}/memberships/{membership_id}/progress-records/{checkpoint_id}` | Upsert `ProgressRecord` по паре (участие, этап) |
-| `GET` | `/api/v1/cohorts/{cohort_id}/summary` | Агрегированный срез по потоку (преподаватель: участники и прогресс) |
+| `GET` | `/api/v1/cohorts/{cohort_id}/summary` | Агрегированный срез по потоку (преподаватель: участники и прогресс); query `viewer_membership_id` — участие преподавателя в этом потоке (MVP при общем Bearer) |
 
 Детальные тела запросов/ответов — в OpenAPI YAML / `openapi.json`.
 

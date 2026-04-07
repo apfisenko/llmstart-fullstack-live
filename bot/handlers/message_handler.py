@@ -4,13 +4,13 @@ from aiogram import F, Router
 from aiogram.enums import ChatAction
 from aiogram.types import Message
 
-from bot.services.llm_service import LlmService
+from bot.services.backend_assistant import BackendAssistantService
 from bot.utils.logger import hash_chat_id
 
 logger = logging.getLogger(__name__)
 
 
-def build_message_router(llm: LlmService) -> Router:
+def build_message_router(llm: BackendAssistantService) -> Router:
     router = Router()
 
     @router.message(F.text & ~F.text.startswith("/"))
@@ -21,10 +21,17 @@ def build_message_router(llm: LlmService) -> Router:
         ch = hash_chat_id(chat_id)
         text = message.text
         logger.info("message text chat_hash=%s len=%s", ch, len(text))
-        await message.bot.send_chat_action(chat_id=chat_id, action=ChatAction.TYPING)
-        reply = await llm.chat(chat_id, text)
-        await message.answer(reply)
-        logger.info("reply sent chat_hash=%s len=%s", ch, len(reply))
+        try:
+            await message.bot.send_chat_action(chat_id=chat_id, action=ChatAction.TYPING)
+            reply = await llm.chat(chat_id, text)
+            await message.answer(reply)
+            logger.info("reply sent chat_hash=%s len=%s", ch, len(reply))
+        except Exception:
+            logger.exception("handle_text failed chat_hash=%s", ch)
+            try:
+                await message.answer("Произошла ошибка при обработке сообщения. Попробуйте позже.")
+            except Exception:
+                logger.exception("failed to send error reply chat_hash=%s", ch)
 
     @router.message(~F.text)
     async def handle_non_text(message: Message) -> None:

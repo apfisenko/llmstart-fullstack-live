@@ -7,7 +7,7 @@ from aiogram.client.session.aiohttp import AiohttpSession
 from bot.config import Config
 from bot.handlers.command_handler import build_command_router
 from bot.handlers.message_handler import build_message_router
-from bot.services.llm_service import LlmService
+from bot.services.backend_assistant import BackendAssistantService
 from bot.utils.logger import setup_logging
 
 logger = logging.getLogger(__name__)
@@ -17,25 +17,23 @@ async def main() -> None:
     config = Config()
     setup_logging(config.log_level)
 
-    prompt_path = config.resolved_system_prompt_path()
-    if not prompt_path.is_file():
-        msg = (
-            f"Файл системного промпта не найден: {prompt_path.resolve()}. "
-            "Проверьте SYSTEM_PROMPT_PATH в .env"
-        )
-        raise FileNotFoundError(msg)
+    assistant = BackendAssistantService(config)
+    try:
+        session = AiohttpSession(proxy=config.proxy_url or None)
+        bot = Bot(token=config.telegram_token, session=session)
+        dp = Dispatcher()
+        dp.include_router(build_command_router(assistant))
+        dp.include_router(build_message_router(assistant))
 
-    system_prompt = prompt_path.read_text(encoding="utf-8")
-    llm = LlmService(config, system_prompt)
-
-    session = AiohttpSession(proxy=config.proxy_url or None)
-    bot = Bot(token=config.telegram_token, session=session)
-    dp = Dispatcher()
-    dp.include_router(build_command_router(llm))
-    dp.include_router(build_message_router(llm))
-
-    logger.info("Bot started")
-    await dp.start_polling(bot)
+        if config.cohort_id is None or config.membership_id is None:
+            logger.warning(
+                "COHORT_ID/MEMBERSHIP_ID не заданы — guest-режим LLM "
+                "(POST /api/v1/assistant/guest/*)."
+            )
+        logger.info("Bot started backend_base=%s", config.resolved_backend_base_url())
+        await dp.start_polling(bot)
+    finally:
+        await assistant.aclose()
 
 
 if __name__ == "__main__":

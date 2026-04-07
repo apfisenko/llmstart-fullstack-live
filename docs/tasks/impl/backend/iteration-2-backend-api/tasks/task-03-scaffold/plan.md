@@ -18,7 +18,7 @@
 |-----|------------|
 | Структура | `backend/app/main.py`, `config.py`, `api/deps.py`, `api/v1/router.py`, `domain/`, `infrastructure/`, `services/`, `migrations/` (пусто, `.gitkeep`) |
 | Зависимости | `backend/pyproject.toml`: FastAPI, uvicorn, pydantic-settings, python-dotenv; dev: ruff; сборка: hatchling |
-| Конфиг | `Settings`: `BACKEND_HOST`, `BACKEND_PORT`, `LOG_LEVEL`, обязательный `BACKEND_API_CLIENT_TOKEN`; `env_file`: `.env`, `../.env` |
+| Конфиг | `Settings`: `BACKEND_HOST`, `BACKEND_PORT`, `LOG_LEVEL`; `env_file`: `.env`, `../.env` |
 | Маршруты | `GET /health` → `{"status":"ok"}`; подключён `APIRouter(prefix="/api/v1")` без бизнес-маршрутов; `/docs`, `/openapi.json` — стандарт FastAPI |
 | Документация | [backend/README.md](../../../../../../../backend/README.md); корневой README и `.env.example` — секция backend |
 
@@ -30,7 +30,7 @@
 |---|----------|-----------------|
 | 1 | `uv sync` и `ruff check app` проходят | `cd backend && uv sync --extra dev && uv run ruff check app` |
 | 2 | `GET /health` возвращает `{"status":"ok"}` | Запуск `uvicorn` по разделу «Команды проверки» ниже; `curl http://127.0.0.1:8000/health` |
-| 3 | Конфиг требует `BACKEND_API_CLIENT_TOKEN`; без него старт даёт понятную ошибку | Запуск без токена в `.env` / окружении |
+| 3 | Каркас стартует без обязательных backend-only секретов; при добавлении обязательных полей в `Settings` — по-прежнему fail-fast (pydantic) | Запуск `uvicorn` с пустым/отсутствующим `.env` для переменных с дефолтами в `Settings` |
 
 Те же проверки может выполнить пользователь для самостоятельной верификации.
 
@@ -50,7 +50,6 @@
 cd backend
 uv sync --extra dev
 uv run ruff check app
-# задать BACKEND_API_CLIENT_TOKEN в .env или окружении
 uv run uvicorn app.main:app --host 127.0.0.1 --port 8000
 # curl http://127.0.0.1:8000/health
 ```
