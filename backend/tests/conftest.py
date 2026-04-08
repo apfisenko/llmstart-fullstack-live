@@ -56,10 +56,10 @@ async def engine():
 @pytest_asyncio.fixture
 async def seed_data(engine):
     async with AsyncSession(engine, expire_on_commit=False) as session:
-        session.add(User(id=USER_ID_A, display_name="Student A"))
-        session.add(User(id=USER_ID_B, display_name="Student B"))
-        session.add(User(id=USER_ID_C, display_name="Extra"))
-        session.add(User(id=USER_ID_TEACHER, display_name="Teacher"))
+        session.add(User(id=USER_ID_A, name="Student A"))
+        session.add(User(id=USER_ID_B, name="Student B"))
+        session.add(User(id=USER_ID_C, name="Extra"))
+        session.add(User(id=USER_ID_TEACHER, name="Teacher"))
         session.add(Cohort(id=COHORT_ID, title="Test cohort", code="test"))
         await session.flush()
         session.add(

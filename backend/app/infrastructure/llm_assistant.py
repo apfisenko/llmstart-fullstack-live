@@ -109,6 +109,10 @@ class OpenRouterLlmAssistant:
             logger.warning("llm_upstream_5xx status=%s", response.status_code)
             raise LlmInvocationError(http_status=503, error_code="LLM_UNAVAILABLE")
 
+        if response.status_code == 429:
+            logger.warning("llm_rate_limited")
+            raise LlmInvocationError(http_status=503, error_code="LLM_UNAVAILABLE")
+
         if response.status_code >= 400:
             logger.warning("llm_upstream_4xx status=%s", response.status_code)
             raise LlmInvocationError(http_status=502, error_code="LLM_BAD_GATEWAY")

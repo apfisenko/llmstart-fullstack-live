@@ -164,7 +164,7 @@ class CohortService:
                     "membership_id": m.id,
                     "user_id": m.user_id,
                     "role": m.role.value,
-                    "display_name": user.display_name,
+                    "name": user.name,
                     "progress": progress,
                 }
             )

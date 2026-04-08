@@ -114,7 +114,7 @@ uv run uvicorn app.main:app --host 127.0.0.1 --port 8000
 **Локально (SQLite):** после первого старта backend файл `llmstart_local.sqlite` появится в каталоге, из которого вы запускали uvicorn (часто `backend/`). Вставьте демо-строки (подставьте свои UUID в `.env` или оставьте эти и скопируйте в `COHORT_ID` / `MEMBERSHIP_ID`):
 
 ```sql
-INSERT INTO users (id, telegram_user_id, display_name)
+INSERT INTO users (id, telegram_user_id, name)
 VALUES ('11111111-1111-1111-1111-111111111111', NULL, 'Demo');
 INSERT INTO cohorts (id, title, code)
 VALUES ('22222222-2222-2222-2222-222222222222', 'Demo cohort', 'demo');

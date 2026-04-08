@@ -59,7 +59,7 @@ class User(Base):
 
     id: Mapped[uuid.UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=uuid.uuid4)
     telegram_user_id: Mapped[Optional[str]] = mapped_column(String(64), nullable=True)
-    display_name: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+    name: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), onupdate=func.now()

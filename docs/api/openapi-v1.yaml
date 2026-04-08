@@ -370,7 +370,7 @@ components:
         role:
           type: string
           enum: [student, teacher]
-        display_name:
+        name:
           type: string
           nullable: true
         progress:

@@ -50,7 +50,7 @@ class CohortSummaryParticipant(BaseModel):
     membership_id: UUID
     user_id: UUID
     role: ParticipantRole
-    display_name: Optional[str] = None
+    name: Optional[str] = None
     progress: dict[str, ProgressStatusEnum]
 
 
