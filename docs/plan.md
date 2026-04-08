@@ -87,20 +87,24 @@
 
 ### Итерация 3: База данных
 
-**Цель:** подключить PostgreSQL, описать базовую доменную схему и запустить первые миграции.
+**Цель:** персистентный слой на PostgreSQL для всего домена API v1: пользователи, потоки, участия, диалоги и сообщения, этапы и записи прогресса; воспроизводимые миграции; локальная инфраструктура (Docker) и начальное наполнение из выгрузки `data/progress-import.v1.json`; документация сценариев «студент / преподаватель → данные» и операционная справка по БД.
 
 **Критерии завершения (DoD):**
 
-- PostgreSQL подключена к backend; соединение валидируется при старте.
-- Базовые таблицы (`User`, `Cohort`, `CohortMembership`) существуют и переживают рестарт.
-- Миграции воспроизводимы: накатываются с нуля одной командой.
-- ADR-001 (PostgreSQL) отражён в проекте на практике.
+- PostgreSQL — целевая среда для локальной разработки и проверок; поднимается из репозитория (например `docker-compose`); соединение валидируется при старте backend.
+- Таблицы по [`data-model.md`](data-model.md) (включая `Dialogue`, `DialogueTurn` / `dialogue_turns`, `ProgressCheckpoint`, `ProgressRecord` и базовые `User`, `Cohort`, `CohortMembership`) существуют, согласованы с ORM и **переживают рестарт** БД и приложения.
+- Миграции Alembic **воспроизводимы с нуля** одной цепочкой команд; политика и команды задокументированы в ADR по tooling (см. [задачу 03](tasks/tasklist-database.md) в `tasklist-database.md`, файл `docs/adr/adr-004-db-tooling.md`) и в [`docs/tech/db-tooling-guide.md`](tech/db-tooling-guide.md).
+- ADR-001 и ADR-002 отражены на практике; принят ADR по операциям с БД и инструментам (**`docs/adr/adr-004-db-tooling.md`**, dev/CI, миграции, соотношение с SQLite в тестах при необходимости).
+- `Makefile`: как минимум `db-up`, `db-down`, `db-reset`, `db-shell`, `migrate-backend`, `seed-progress` или `db-seed` — задокументированы в README и в [`docs/tech/db-tooling-guide.md`](tech/db-tooling-guide.md).
+- Начальное наполнение из `data/progress-import.v1.json` выполняется командой сида; схема JSON описана в плане задачи 04 tasklist.
+- Backend API v1 при работе с персистентными сущностями использует PostgreSQL (не файл SQLite по умолчанию для dev); гостевой ассистент без БД — по контракту без изменений.
+- Актуализированы: [`docs/tasks/tasklist-database.md`](tasks/tasklist-database.md) (итерация закрыта), [`docs/data-model.md`](data-model.md), при необходимости OpenAPI/контракт; DoD этого раздела сверяется с `summary.md` итерации в `docs/tasks/impl/database/iteration-3-database/`.
 
 **Связь с tasklist:** [docs/tasks/tasklist-database.md](tasks/tasklist-database.md)
 
-**Полезный результат:** слой данных готов; API получает персистентное хранилище.
+**Полезный результат:** слой данных готов; клиенты получают стабильное хранилище под сценарии студента и преподавателя.
 
-**Артефакты:** `backend/migrations/`, обновлённый `.env.example`.
+**Артефакты:** `docker-compose.yml` (или эквивалент), `backend/migrations/`, `backend/app/domain/`, `backend/app/infrastructure/`, `data/progress-import.v1.json`, скрипт/команда сида, обновлённые `Makefile`, `backend/.env.example`, `docs/tech/user-scenarios.md`, `docs/tech/db-tooling-guide.md`, `docs/adr/adr-004-db-tooling.md`.
 
 ---
 

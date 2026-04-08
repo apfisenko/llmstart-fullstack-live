@@ -1,0 +1,454 @@
+{
+  "format": "course-progress-import",
+  "version": 1,
+  "meta": {
+    "generated_at": "2026-03-31T11:30:41+00:00",
+    "source_path": "data/result.json",
+    "timezone_note": "Поле submitted_at — как в экспорте Telegram (без суффикса таймзоны); при импорте в timestamptz задайте интерпретацию (например Europe/Moscow)."
+  },
+  "flow_hint": {
+    "title": "M05 LLM Start Fullstack",
+    "lesson_mapping": "homework_number N → lessons.position = N в целевом потоке"
+  },
+  "students": [
+    {
+      "telegram_id": 459032551,
+      "name": "Alex Bondarenko",
+      "export_from_id": "user459032551"
+    },
+    {
+      "telegram_id": 342836625,
+      "name": "Alexander Dergilev",
+      "export_from_id": "user342836625"
+    },
+    {
+      "telegram_id": 232775688,
+      "name": "Alexey Tarantin",
+      "export_from_id": "user232775688"
+    },
+    {
+      "telegram_id": 48823638,
+      "name": "Vlad",
+      "export_from_id": "user48823638"
+    },
+    {
+      "telegram_id": 746687369,
+      "name": "Vladimir Zolotopupov",
+      "export_from_id": "user746687369"
+    },
+    {
+      "telegram_id": 5328156587,
+      "name": "Александр",
+      "export_from_id": "user5328156587"
+    },
+    {
+      "telegram_id": 5206284265,
+      "name": "Алексей Фисенко",
+      "export_from_id": "user5206284265"
+    },
+    {
+      "telegram_id": 390623547,
+      "name": "Артем Пивнев",
+      "export_from_id": "user390623547"
+    },
+    {
+      "telegram_id": 209090309,
+      "name": "Вадим Семенов",
+      "export_from_id": "user209090309"
+    },
+    {
+      "telegram_id": 318248596,
+      "name": "Евгений",
+      "export_from_id": "user318248596"
+    },
+    {
+      "telegram_id": 887474491,
+      "name": "Марат Еникеев",
+      "export_from_id": "user887474491"
+    },
+    {
+      "telegram_id": 8410219480,
+      "name": "Мария Регистратор-паспортист наружной рекламы",
+      "export_from_id": "user8410219480"
+    },
+    {
+      "telegram_id": 188272933,
+      "name": "Юрий Баскаков ЛЭТИ",
+      "export_from_id": "user188272933"
+    }
+  ],
+  "submissions": [
+    {
+      "lesson_position": 1,
+      "student_telegram_id": 48823638,
+      "student_name": "Vlad",
+      "submitted_at": "2026-03-18T22:53:54",
+      "progress_status": "done",
+      "summary_text": "✅ Домашка 1 выполнена\n\n🤖 Warp:\n- Сценарии: A2, А2 и A3 выполнены\n- Что получилось: все сошлось с проверками.\n- Где пригодится: пока не знаю, но понятно как работает warp\n\n🎨 Лендинг:\n- Вариант: Б3\n- Инструмент: codex и с логальной ollama.\n- Ссылка: https://vladislavmilovanov.github.io/ai-ecosystem-for-devs/\n- Картинки: приложил \n\n💬 Впечатления:\nВсе понятно вроде бы. Warp творит чудеса- ты ему сказал что нужно и он выполняет.\nлокальная llm не очень хороша в разработке у меня, видимо не ту скачал(\n\n📝 Опрос пройден: ✅",
+      "artifact_urls": [
+        "https://vladislavmilovanov.github.io/ai-ecosystem-for-devs/"
+      ],
+      "source": {
+        "telegram_message_id": 148,
+        "has_photo": true,
+        "has_file": false
+      }
+    },
+    {
+      "lesson_position": 1,
+      "student_telegram_id": 188272933,
+      "student_name": "Юрий Баскаков ЛЭТИ",
+      "submitted_at": "2026-03-19T00:18:21",
+      "progress_status": "done",
+      "summary_text": "✅ Домашка 1 выполнена\n\n🤖 Warp:\nделал все на win11.\n\n- Сценарии выполнял\nс А4 облом The llama3.2:1b model is too small for this task — it ignored the question and hallucinated a generic answer instead of reading the program. Based on the actual content of PROGRAM.md\nпредлагает другие модели использовать\n🎨 Лендинг:\n- Вариант: Б2\n- Инструмент: v0.\n- Ссылка: https://v0-foodie-wagon-ka77rgt84-boskspb-5515s-projects.vercel.app/\n\n💬 Впечатления:\nв принципе с warp уже работал, так что особых открытий в нем не было. С генерацией по шаблону интересный опыт, особенно когда нужно от чего-то оттолкнуться с заказчиком.\n\n📝 Опрос пройден: ✅",
+      "artifact_urls": [
+        "https://v0-foodie-wagon-ka77rgt84-boskspb-5515s-projects.vercel.app/"
+      ],
+      "source": {
+        "telegram_message_id": 166,
+        "has_photo": true,
+        "has_file": false
+      }
+    },
+    {
+      "lesson_position": 1,
+      "student_telegram_id": 209090309,
+      "student_name": "Вадим Семенов",
+      "submitted_at": "2026-03-19T07:13:31",
+      "progress_status": "done",
+      "summary_text": "✅ Домашка 1 выполнена\n\n🤖 Warp:\n- Сценарии: A1-A4\n- Что получилось: всё\n- Где пригодится: при выполнении команд в терминале когда не помнишь самих команд. очень удобно что можно прям в терминале промты писать и что Warp сразу ищет другие варианты если первые не сработали. Понравилось 👍\n\n🎨 Лендинг:\n- Вариант: Б3\n- Инструмент: Lovable\n- Ссылка: https://coders-ai-quest.lovable.app/\n- Картинки: приложил\n\n💬 Впечатления:\nТо что сразу делает страницу - впечатляет. Посмотрим как доводить это до ума в более сложных приложениях 🙂\n\n📝 Опрос пройден: ✅",
+      "artifact_urls": [
+        "https://coders-ai-quest.lovable.app/"
+      ],
+      "source": {
+        "telegram_message_id": 168,
+        "has_photo": true,
+        "has_file": false
+      }
+    },
+    {
+      "lesson_position": 1,
+      "student_telegram_id": 8410219480,
+      "student_name": "Мария Регистратор-паспортист наружной рекламы",
+      "submitted_at": "2026-03-19T23:37:19",
+      "progress_status": "done",
+      "summary_text": "✅ Домашка 1 \nЗадание 1\nВыбранные сценарии: A1 (Локальное окружение) и A3 (Docker)\nWarp работать отказался, работу провела в Cursor\n\nA1: Cursor выявил  отсутствие инструмента uv. Получена команда установки. Установка выполнена вручную, добавлен путь в переменные среды PATH. Инструмент установился (версия 0.10.11). Также получен топ-5 процессов по потреблению памяти.\n\nA3: Cursor выявил отсутствие Docker и предоставил пошаговую инструкцию по установке Docker Desktop и команды для управления контейнерами (запуск, логи, остановка). Скачала с официального сайта,  \nСтолкнулась с проблемой запуска Docker Desktop.\nЗатем пошла по промту из дз.\nCursor  действовал по шагам, попутно устранил проблему с Docker\n\nВывод сделать не смогла (не хватило понимания)",
+      "artifact_urls": [],
+      "source": {
+        "telegram_message_id": 230,
+        "has_photo": true,
+        "has_file": false
+      }
+    },
+    {
+      "lesson_position": 1,
+      "student_telegram_id": 746687369,
+      "student_name": "Vladimir Zolotopupov",
+      "submitted_at": "2026-03-20T13:10:26",
+      "progress_status": "done",
+      "summary_text": "✅ Домашка 1 выполнена\n\n🤖 Warp:\n- Сценарии: A1-A3\n- Что получилось: всё\n- Где пригодится: при настройке среды разработки, настройке сред тестирования и публикации приложения. У меня не были установлены uv и Docker. Магия впечатлила, мне настройка среды часто выбешивала. А так получается можно это делегировать. Выполнял на Windows 11, поэтому с Docker ещё потребовалось часть донастройки выполнить, чтобы он запустился и заработал.\n\nНемного изменил вариант ДЗ 2. Вместо лэндинга решил попробовать сгенерить мини-админку для своего проекта.\n🎨 Админка своего приложения для управления расписанием занятий репетиора:\n- Вариант: Б1\n- Инструмент: Lovable\n- Ссылка: https://tutor-schedule.lovable.app/\n- Вход в приложение admin / admin\n- Картинки и промт: приложил\n\n💬 Впечатления:\nТо что за 5 минут сделал мини-сайт очень впечатляет. Посмотрим как это можно будет развивать дальше.\n\n📝 Опрос пройден: ✅",
+      "artifact_urls": [
+        "https://tutor-schedule.lovable.app/"
+      ],
+      "source": {
+        "telegram_message_id": 239,
+        "has_photo": true,
+        "has_file": false
+      }
+    },
+    {
+      "lesson_position": 2,
+      "student_telegram_id": 209090309,
+      "student_name": "Вадим Семенов",
+      "submitted_at": "2026-03-22T11:34:44",
+      "progress_status": "done",
+      "summary_text": "✅ Домашка 2 выполнена\n\n🤖 Бот:\n- Идея / роль: Telegram-бот с LLM для ответов по вопросам разработки на self hosted n8n (MVP).\n- Что проверил: /start, диалог, логи.\n\n🛠 Стек:\n- Python · aiogram · OpenRouter · uv · make\n\n🔗 Репозиторий:\n- https://github.com/freevad-pro/LLM_Agent_learn_1\n\n📸 Скриншоты:\n- приложил к сообщению\n\n💬 Впечатления:\n- такой простой бот делается прям без включения мозгов )\n\n📝 Опрос пройден: ✅",
+      "artifact_urls": [
+        "https://github.com/freevad-pro/LLM_Agent_learn_1"
+      ],
+      "source": {
+        "telegram_message_id": 310,
+        "has_photo": true,
+        "has_file": false
+      }
+    },
+    {
+      "lesson_position": 2,
+      "student_telegram_id": 188272933,
+      "student_name": "Юрий Баскаков ЛЭТИ",
+      "submitted_at": "2026-03-22T15:59:59",
+      "progress_status": "done",
+      "summary_text": "✅ Домашка 2 выполнена\n\n🤖 Бот:\n- Идея / роль: Telegram-бот для отзывов посетителей кафе. В результате прохода выдается промокод на 10% скидки. В промокоде урл на второй бот для персонала (проверка по белому списку пользователей). Как хранилище ответов используется гугл шит.\n- Что проверил: /start, логи.\nможно пробовать: @foreveryoung_cafe_bot но само кафе в Будапеште. Бот мультиязычный ru/en/hu\n\n🛠 Стек:\n- Python · aiogram · uv · make, gspread, google-auth, qrcode\n\n🔗 Репозиторий:\nprivate\n\n📸 Скриншоты:\n- приложил к сообщению\n\n💬 Впечатления:\n- сделал быстро. В процессе не много менялась логика. Например изначального не было QR code, а был промик в виде 4х букв. Но понял что для персонала это не удобно, поэтому запустил второго.\n\n📝 Опрос пройден: ✅",
+      "artifact_urls": [],
+      "source": {
+        "telegram_message_id": 316,
+        "has_photo": true,
+        "has_file": false
+      }
+    },
+    {
+      "lesson_position": 1,
+      "student_telegram_id": 342836625,
+      "student_name": "Alexander Dergilev",
+      "submitted_at": "2026-03-22T19:20:42",
+      "progress_status": "done",
+      "summary_text": "✅ Домашка 1 выполнена\n\n🤖 Warp:\n- Сценарии: \n  Сценарий A1. Локальное окружение: uv и процессы (Wrap)- сделано\n  Сценарий A3. Docker: запустить, посмотреть, остановить (Wrap) - сделано\n- Что получилось: Все получилось\n\n🎨 Лендинг:\n- Вариант: Вариант Б1. Лендинг своего проекта (Cursor) - сделано. Взял реальный проект по автоматизации расчета промо. Создал на курсоре проект по принципам aidd. В основе использовал django. На стартовой странице отразил воркфлоу работы.\n- Картинки: приложил\n\n💬 Впечатления:\nОтличные домашки, все круто, все по делу:)\n\n📝 Опрос пройден: ✅",
+      "artifact_urls": [],
+      "source": {
+        "telegram_message_id": 317,
+        "has_photo": true,
+        "has_file": false
+      }
+    },
+    {
+      "lesson_position": 2,
+      "student_telegram_id": 746687369,
+      "student_name": "Vladimir Zolotopupov",
+      "submitted_at": "2026-03-22T19:29:38",
+      "progress_status": "done",
+      "summary_text": "✅ Домашка 2 выполнена\n\n🤖 Бот:\n- Идея / роль: Telegram-бот с LLM для сопровождения учебного процесса для репетитора по математике. Пока никак не связан с расписанием выдает только ответы на вопросы по решению математических задач\n- Ссылка на бот: @tutor_zva1234_bot\n- Что проверил: /start, диалог, логи, ошибки\n\n🛠 Стек:\n- Python · aiogram · OpenRouter · uv · make\n\n🔗 Репозиторий:\n- https://github.com/vzolotopupov77/Ttlg_bot_learning\n\n📸 Скриншоты:\n- приложил к сообщению\n\n💬 Впечатления:\n- Уже дольше разбирался, чем с Заданием 1. Немного провозился в поиске ошибки, а тупо не сохранил файл с настройками и замучал бота в том, чтобы он исправил ошибки :) Круто, что из коробки почти можно к боту в Телеграмме прикручивать LLM-модель для ответов на вопросы\n\n📝 Холст заполнен: ✅\n📝 Опрос пройден: ✅",
+      "artifact_urls": [
+        "https://github.com/vzolotopupov77/Ttlg_bot_learning"
+      ],
+      "source": {
+        "telegram_message_id": 321,
+        "has_photo": true,
+        "has_file": false
+      }
+    },
+    {
+      "lesson_position": 2,
+      "student_telegram_id": 48823638,
+      "student_name": "Vlad",
+      "submitted_at": "2026-03-23T22:45:57",
+      "progress_status": "done",
+      "summary_text": "✅ Домашка 2 выполнена\n\n🤖 Бот:\n- Идея / роль: бот который говорит статус состояния оборудования. \n- Что проверил: /start, диалог. Что еще проверить, пока не понимаю\n\n🛠 Стек:\n- OpenRouter, cursor я так понимаю еще питона использовал. \n\n🔗 Репозиторий:\nhttps://github.com/VladislavMilovanov/tg-maintenance-bot\n\n📸 Скриншоты:\n- приложил к сообщению \n\n💬 Впечатления:\n- пока все довольно просто и логично, после просмотра видео и чтения конспекта. \n\n📝 Опрос пройден: ✅",
+      "artifact_urls": [
+        "https://github.com/VladislavMilovanov/tg-maintenance-bot"
+      ],
+      "source": {
+        "telegram_message_id": 332,
+        "has_photo": true,
+        "has_file": false
+      }
+    },
+    {
+      "lesson_position": 1,
+      "student_telegram_id": 459032551,
+      "student_name": "Alex Bondarenko",
+      "submitted_at": "2026-03-24T09:44:54",
+      "progress_status": "done",
+      "summary_text": "✅ Домашка 1 выполнена \n\n🤖 задание 1:\n- Сценарии: А1 и А2\nПоскольку warp с ходу не взлетел, а танцевать с бубном для оплаты про не было возможности, сделал в курсоре.\n- Что получилось: всё\n- Где пригодится: как база для дальнейшего обучения \n\n🎨 Лендинг:\n- Вариант: Вариант Б1. Лендинг своего проекта \"Курс по DataManagement\" - сделано. Взял одну из своих side-активностей для примера. \n- Инструмент Perplexity \n\n💬 Впечатления:\nОтличные домашки, очень интересно \n\n📝 Опрос пройден: ✅ \n\n📊 Материалы выложены на общую доску \n\nБуду догонять на этой неделе 🚀",
+      "artifact_urls": [],
+      "source": {
+        "telegram_message_id": 336,
+        "has_photo": false,
+        "has_file": false
+      }
+    },
+    {
+      "lesson_position": 2,
+      "student_telegram_id": 232775688,
+      "student_name": "Alexey Tarantin",
+      "submitted_at": "2026-03-24T11:42:57",
+      "progress_status": "done",
+      "summary_text": "✅ Домашка 2 выполнена\n\n🤖 Бот:\n- Идея / роль: повторил бота с учебного проекта (без README.md и PROGRAM.md)\n- Что проверил: /start, диалог\n\n🛠 Стек:\n- Python · aiogram · OpenRouter · uv · make \n\n🔗 Репозиторий:\n- https://github.com/AlexeyVlTarantin/llmstart-fullstack-live-at\n\n📸 Скриншоты:\n- приложил к сообщению / на холст\n\n💬 Впечатления:\n- Good\n\n📝 Опрос пройден: ✅ / ❌",
+      "artifact_urls": [
+        "https://github.com/AlexeyVlTarantin/llmstart-fullstack-live-at"
+      ],
+      "source": {
+        "telegram_message_id": 369,
+        "has_photo": true,
+        "has_file": false
+      }
+    },
+    {
+      "lesson_position": 1,
+      "student_telegram_id": 390623547,
+      "student_name": "Артем Пивнев",
+      "submitted_at": "2026-03-25T19:14:05",
+      "progress_status": "done",
+      "summary_text": "✅ Домашка 1 выполнена\n\n🤖 Warp:\n- Сценарии: A1,  A2 и А3 выполнены\n- Что получилось: Все получилось корректно, с проверками сошлось\n- Где пригодится: В дальнейшем поможет создавать запросы из терминала, меньше используя доку и поиск нужного запроса.\n\n🎨 Лендинг:\n- Вариант: Б1\n- Инструмент: Cursor\n- Ссылка: https://artempivnev.github.io/expo-landing_V1/#about\n- Картинки: приложил \n\n💬 Впечатления:\nВ целом пока что все понятно, чуть после старта приступил к курсу и начал смотреть с 3 урока и потихоньку поднимаю свой проект.\n\n📝 Опрос пройден: ✅",
+      "artifact_urls": [
+        "https://artempivnev.github.io/expo-landing_V1/#about"
+      ],
+      "source": {
+        "telegram_message_id": 435,
+        "has_photo": true,
+        "has_file": false
+      }
+    },
+    {
+      "lesson_position": 1,
+      "student_telegram_id": 887474491,
+      "student_name": "Марат Еникеев",
+      "submitted_at": "2026-03-25T22:22:26",
+      "progress_status": "done",
+      "summary_text": "✅ Домашка 1 — сделано\n\n🤖 Терминал (блок A)\nДелал в Cursor, разные проекты — всё завелось\n\n🎨 Лендинг — Б1, свой проект\nИнструмент: Cursor, итерации короткие, мысли в docs/ (vision, site_concept, tasklist).\n\nСтек\nNext.js + TS + React, Tailwind.\nКонтент в MD в content/works и content/videos, без БД на MVP.\nБилд: npm run build, прод: Vercel.\nПро релизный бандл — в README (prepare-release, полный vs public-only).\n\nО чём сайт\nЛичная визитка: кто я, чем занимаюсь, где читать/смотреть (TG, YouTube, VK, Pikabu…).\nНа MVP — главная, записки /works, видео /videos, площадки /channels.\nКому:  подписчики\nПро DE, Airflow, Spark, LLM, ML в проде и т.д.\n\nСкрины\n+\n\n\n🔗 Ссылка\nhttps://marat-notes-site-release.vercel.app/\n\n🖼 Картинки: приложил \n\n💬 Впечатления\nЗадания бьются с тем, как реально работаешь в Cursor🔥👍\n\n📝 Опрос: ✅",
+      "artifact_urls": [
+        "https://marat-notes-site-release.vercel.app/"
+      ],
+      "source": {
+        "telegram_message_id": 440,
+        "has_photo": true,
+        "has_file": false
+      }
+    },
+    {
+      "lesson_position": 2,
+      "student_telegram_id": 887474491,
+      "student_name": "Марат Еникеев",
+      "submitted_at": "2026-03-25T22:37:35",
+      "progress_status": "done",
+      "summary_text": "✅ Домашка 2 выполнена\n\n🤖 Бот:\n- Идея / роль: Telegram-ассистент по контенту канала о разработке (LLM + RAG): ответы опираются на материалы блога, с источниками; при нехватке контекста — честный отказ (политика из doc/vision.md). Канал MVP — личка с ботом.\n- Что проверил: /start, /help, текстовый диалог; LLM — OpenRouter, история в памяти по chat_id (README.md).\n\nПроблемы:\nХотел по Api каждый раз обновлять данные из телеграм, сейчас не могу зарегаться на my.telegram.org. У кого-нибудь есть опыт с этим, постоянный error, возможно из-за несовпадения VPN и региона указанного номера телефона\n\nБесплатные модели - очень медленные, по крайне мере те которые прикреплял))\n\n🛠 Стек:\n- Python 3.11+ · aiogram · OpenRouter (клиент OpenAI) · python-dotenv · venv · install.sh / run.sh · Docker Compose . В doc/vision.md зафиксирован также uv; зависимости в репозитории — через requirements.txt.\n\n\n📸 Скриншоты:\n- приложил к сообщению\n\n💬 Впечатления:\n- Good\n\n📝 Опрос пройден: ✅",
+      "artifact_urls": [],
+      "source": {
+        "telegram_message_id": 445,
+        "has_photo": true,
+        "has_file": false
+      }
+    },
+    {
+      "lesson_position": 2,
+      "student_telegram_id": 459032551,
+      "student_name": "Alex Bondarenko",
+      "submitted_at": "2026-03-25T22:50:18",
+      "progress_status": "done",
+      "summary_text": "✅ Домашка 2 выполнена\n\n🤖 Бот:\nTelegram-бот с LLM для сопровождения учебного потока (MVP).\n\n🛠 Стек:\n- Python · aiogram · OpenRouter · uv  · python-dotenv · venv · make \n\n🔗 Репозиторий:\nhttps://github.com/bondarenkoalexeynicolaevich/llmstart-fullstack-2-bondarenko\n\n📸 Скриншоты:\nприложил на холст\n\n💬 Впечатления:\nУдивило, насколько быстро получилось на этот раз. Модель прикрутил бесплатную, поэтому она не огонь какая умная, но для тренировки ОК. \n\n📝 Опрос пройден: ✅",
+      "artifact_urls": [
+        "https://github.com/bondarenkoalexeynicolaevich/llmstart-fullstack-2-bondarenko"
+      ],
+      "source": {
+        "telegram_message_id": 447,
+        "has_photo": false,
+        "has_file": false
+      }
+    },
+    {
+      "lesson_position": 3,
+      "student_telegram_id": 232775688,
+      "student_name": "Alexey Tarantin",
+      "submitted_at": "2026-03-26T14:25:49",
+      "progress_status": "done",
+      "summary_text": "✅ Домашка 3 выполнена (в рамках учебного проекта)\n\n📐 Системный дизайн:\n- idea.md: расширена до системы сопровождения потока\n- vision.md: обновлена архитектура (multi-client, backend API)\n- data-model.md: сущности и выбор СУБД\n- integrations.md: внешние связи\n\n🗂 Планирование:\n- workflow.mdc: создан\n- plan.md: дорожная карта, 7 итераций\n- tasklist-backend.md: tasklist для backend\n\n📘 Проект:\n- README.md: описание проекта и точка входа в документацию\n- ADR-001: выбор СУБД\n\n🔗 Репозиторий: https://github.com/AlexeyVlTarantin/llmstart-fullstack-live-at/tree/main\n\n💬 Впечатления: Good\n\n📝 Опрос пройден: ✅",
+      "artifact_urls": [
+        "https://github.com/AlexeyVlTarantin/llmstart-fullstack-live-at/tree/main"
+      ],
+      "source": {
+        "telegram_message_id": 473,
+        "has_photo": true,
+        "has_file": false
+      }
+    },
+    {
+      "lesson_position": 3,
+      "student_telegram_id": 48823638,
+      "student_name": "Vlad",
+      "submitted_at": "2026-03-26T22:41:00",
+      "progress_status": "done",
+      "summary_text": "✅ Домашка 3 выполнена\n\n📐 Системный дизайн:\n- idea.md: расширена до продуктовой системы мониторинга оборудования\n- vision.md: обновлена архитектура (multi-client, backend API)\n- data-model.md: сущности и выбор СУБД\n- integrations.md: внешние связи\n\n🗂 Планирование:\n- workflow.mdc: создан тут: .cursor/rules/workflow.mdc это норм?\n- plan.md: дорожная карта, 5 итераций\n- tasklist-backend.md: tasklist для backend\n\n📘 Проект:\n- README.md: описание проекта и точка входа в документацию\n- ADR-001: выбор СУБД\n\n🔗 Репозиторий: https://github.com/VladislavMilovanov/tg-maintenance-bot\n\n💬 Впечатления: на видео куча инфы, голова кругом. НО потом домашку сделал з 30 минут наверное. Надеюсь что верно. \nИ в результате такое ощущение, что все ок, все декомпозировано доовльно неплохо. Это первый проект, можно сказать учебный. Думаю каждый следующий будет лучше.\n\n📝 Опрос пройден: ✅",
+      "artifact_urls": [
+        "https://github.com/VladislavMilovanov/tg-maintenance-bot"
+      ],
+      "source": {
+        "telegram_message_id": 484,
+        "has_photo": false,
+        "has_file": false
+      }
+    },
+    {
+      "lesson_position": 3,
+      "student_telegram_id": 746687369,
+      "student_name": "Vladimir Zolotopupov",
+      "submitted_at": "2026-03-28T20:57:57",
+      "progress_status": "done",
+      "summary_text": "✅ Домашка 3 выполнена\n\n📐 Системный дизайн:\n- idea.md: расширена до системы сопровождения учебного процесса\n- vision.md: обновлена архитектура (multi-client, backend API)\n- data-model.md: сущности и выбор СУБД\n- integrations.md: внешние связи\n\n🗂 Планирование:\n- workflow.mdc: создан\n- plan.md: дорожная карта, 6 итераций\n- tasklist-backend.md: tasklist для backend + ещё отдельно для каждой итерации попросил выделить задачи на изменение backend\n\n📘 Проект:\n- README.md: описание проекта и точка входа в документацию\n- ADR-001: выбор СУБД сделан\n\n🔗 Репозиторий: https://github.com/vzolotopupov77/Ttlg_bot_learning\n\n💬 Впечатления: любопытно, что в итоге получится. Сейчас он задачи на изменения бэкэнда в 4 из 6 итераций запихнул. Не знаю правильно или нет. Но вроде как логично постепенно наращивать будет функции сервиса.\n\n📝 Опрос пройден: ✅",
+      "artifact_urls": [
+        "https://github.com/vzolotopupov77/Ttlg_bot_learning"
+      ],
+      "source": {
+        "telegram_message_id": 493,
+        "has_photo": false,
+        "has_file": false
+      }
+    },
+    {
+      "lesson_position": 2,
+      "student_telegram_id": 342836625,
+      "student_name": "Alexander Dergilev",
+      "submitted_at": "2026-03-29T17:16:51",
+      "progress_status": "done",
+      "summary_text": "✅ Домашка 2 выполнена\n\n🤖 Бот:\n- Персональный Telegram-бот для сотрудников компании — помогает быстро оформить кадровые документы (MVP: заявление на отпуск)\n- Что проверил: /start, свободный ввод запроса («Создай заявление на отпуск с 20 по 24 апреля 2026»), пошаговый сбор полей через FSM, генерация .docx по шаблону с автоподстановкой получателя и расчётом количества дней\n\n🛠 Стек:\n- Python 3.12 · aiogram 3.x (FSM + polling) · OpenRouter (OpenAI-compatible API) · python-docx · pydantic-settings · uv · make\n\n📸 Скриншоты:\n- приложил к сообщению\n\n💬 Впечатления:\n- Все гуд. Попробовал режим планирования. Сложнее всего — отладка работы с .docx через python-docx: замена плейсхолдеров в runs потребовала разбора на уровне XML. Кривовато создался шаблон по примеру, возможно будет лучше использовать Html шаблон, как базовый, и далее сохранение в docx. LLM (OpenRouter) хорошо парсит свободный запрос и извлекает поля.",
+      "artifact_urls": [],
+      "source": {
+        "telegram_message_id": 494,
+        "has_photo": true,
+        "has_file": false
+      }
+    },
+    {
+      "lesson_position": 1,
+      "student_telegram_id": 5206284265,
+      "student_name": "Алексей Фисенко",
+      "submitted_at": "2026-03-29T20:37:29",
+      "progress_status": "done",
+      "summary_text": "✅ ДЗ 1 выполнена. Задача 1 варианты A1,A2 Задача 2 вариант Б1 , lovable , https://hd-ai-support.lovable.app",
+      "artifact_urls": [
+        "https://hd-ai-support.lovable.app"
+      ],
+      "source": {
+        "telegram_message_id": 495,
+        "has_photo": true,
+        "has_file": false
+      }
+    },
+    {
+      "lesson_position": 2,
+      "student_telegram_id": 5328156587,
+      "student_name": "Александр",
+      "submitted_at": "2026-03-30T14:51:54",
+      "progress_status": "done",
+      "summary_text": "✅ Домашка 2 выполнена!\n\n🤖 Бот:\n- Идея / роль: бот для бронирования гостевого домика\n- Что проверил: /start, диалог, кейсы бронирования, отмены, переноса, информацию о наличии мест\n\n🛠 Стек:\n- Python · aiogram · routerai · uv · make · docker\n\n🔗 Репозиторий:\n- https://github.com/alfa24/mbt_booking_agent\n\n💬 Впечатления:\n- Получился достаточно быстрый mvp",
+      "artifact_urls": [
+        "https://github.com/alfa24/mbt_booking_agent"
+      ],
+      "source": {
+        "telegram_message_id": 506,
+        "has_photo": true,
+        "has_file": false
+      }
+    },
+    {
+      "lesson_position": 3,
+      "student_telegram_id": 5328156587,
+      "student_name": "Александр",
+      "submitted_at": "2026-03-30T14:53:24",
+      "progress_status": "done",
+      "summary_text": "✅ Домашка 3 выполнена\n\n📐 Системный дизайн:\n- idea.md: расширена до системы бронирования жилья\n- vision.md: обновлена архитектура (multi-client, backend API)\n- data-model.md: сущности и выбор СУБД\n- integrations.md: внешние связи\n\n🗂 Планирование:\n- workflow.mdc: создан\n- plan.md: дорожная карта, 4 итераций\n- tasklist-backend.md: tasklist для backend\n\n📘 Проект:\n- README.md: описание проекта и точка входа в документацию\n- ADR-001: выбор СУБД\n\n🔗 Репозиторий: https://github.com/alfa24/mbt_booking_agent\n\n💬 Впечатления: Информация полезна даже в отрыве от ai-разработки.\n\n📝 Опрос пройден: ✅",
+      "artifact_urls": [
+        "https://github.com/alfa24/mbt_booking_agent"
+      ],
+      "source": {
+        "telegram_message_id": 507,
+        "has_photo": false,
+        "has_file": false
+      }
+    },
+    {
+      "lesson_position": 2,
+      "student_telegram_id": 318248596,
+      "student_name": "Евгений",
+      "submitted_at": "2026-03-30T20:43:09",
+      "progress_status": "done",
+      "summary_text": "Домашка 2 выполнена. \n\n🔗 Репозиторий:\nhttps://github.com/johnsedaze/jd_llmstart_02 \n\n\nПроблемы:\n\n1. Агент проигнорировал что по стеку требовался питон 13.2 и собрал окружение используя версию, которая на тот момент была в системе.  Не остановился, не задал вопрос, а все ли в порядке. \n\n2.  Зачем мы дублируем принципы в  conventions, ссылаемся при этом на visions, в котором и так указаны те же самые принципы. Тем самым увеличили контекст.  Why?",
+      "artifact_urls": [
+        "https://github.com/johnsedaze/jd_llmstart_02"
+      ],
+      "source": {
+        "telegram_message_id": 508,
+        "has_photo": true,
+        "has_file": false
+      }
+    }
+  ]
+}
