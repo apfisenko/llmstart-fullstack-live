@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+import uuid
 from datetime import timezone
 from typing import Optional
 from uuid import UUID, uuid4
@@ -10,6 +11,7 @@ from sqlalchemy.orm import selectinload
 
 from app.api.errors import ApiError
 from app.domain.models import (
+    Cohort,
     CohortMembership,
     Dialogue,
     DialogueChannel,
@@ -18,14 +20,62 @@ from app.domain.models import (
     MessageRole,
 )
 from app.infrastructure.llm_assistant import LlmAssistant, LlmInvocationError
+from app.services.guest_dialogue_service import GuestDialogueService
 
 logger = logging.getLogger(__name__)
 
+# Стабильный synthetic dialogue_id для режима «поток не в БД» (как гостевой LLM).
+_EPHEMERAL_DIALOGUE_NS = UUID("018f3a2c-7b91-7d00-8000-000000000001")
+
 
 class DialogueService:
-    def __init__(self, session, llm: LlmAssistant) -> None:
+    def __init__(self, session, llm: LlmAssistant, guest: GuestDialogueService) -> None:
         self._session = session
         self._llm = llm
+        self._guest = guest
+
+    def _ephemeral_guest_key(
+        self, cohort_id: UUID, membership_id: UUID, channel: str
+    ) -> str:
+        return f"v1-cohort-missing:{cohort_id}:{membership_id}:{channel}"
+
+    def _ephemeral_dialogue_id(
+        self, cohort_id: UUID, membership_id: UUID, channel: str
+    ) -> UUID:
+        return uuid.uuid5(
+            _EPHEMERAL_DIALOGUE_NS,
+            self._ephemeral_guest_key(cohort_id, membership_id, channel),
+        )
+
+    async def _post_message_cohort_not_in_db(
+        self,
+        *,
+        cohort_id: UUID,
+        membership_id: UUID,
+        channel: str,
+        dialogue_id: Optional[UUID],
+        content: str,
+    ) -> dict:
+        expected_dialogue_id = self._ephemeral_dialogue_id(
+            cohort_id, membership_id, channel
+        )
+        if dialogue_id is not None and dialogue_id != expected_dialogue_id:
+            raise ApiError(403, "FORBIDDEN", "Forbidden")
+
+        guest_key = self._ephemeral_guest_key(cohort_id, membership_id, channel)
+        result = await self._guest.post_message(
+            guest_session_key=guest_key, content=content
+        )
+        logger.info(
+            "dialogue_message_ephemeral_cohort dialogue_id=%s content_len=%s",
+            expected_dialogue_id,
+            len(content),
+        )
+        return {
+            "dialogue_id": expected_dialogue_id,
+            "user_message_id": uuid4(),
+            "assistant_message": result["assistant_message"],
+        }
 
     async def post_message(
         self,
@@ -36,6 +86,18 @@ class DialogueService:
         dialogue_id: Optional[UUID],
         content: str,
     ) -> dict:
+        cohort_exists = await self._session.scalar(
+            select(Cohort.id).where(Cohort.id == cohort_id)
+        )
+        if cohort_exists is None:
+            return await self._post_message_cohort_not_in_db(
+                cohort_id=cohort_id,
+                membership_id=membership_id,
+                channel=channel,
+                dialogue_id=dialogue_id,
+                content=content,
+            )
+
         membership = await self._session.scalar(
             select(CohortMembership).where(
                 CohortMembership.id == membership_id,

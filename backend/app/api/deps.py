@@ -51,9 +51,10 @@ SessionDep = Annotated[AsyncSession, Depends(get_db_session)]
 def get_dialogue_service(
     session: SessionDep,
     request: Request,
+    guest: GuestDialogueServiceDep,
 ) -> DialogueService:
     llm = request.app.state.llm
-    return DialogueService(session, llm)
+    return DialogueService(session, llm, guest)
 
 
 def get_cohort_service(session: SessionDep) -> CohortService:

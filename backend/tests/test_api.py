@@ -39,6 +39,90 @@ async def test_post_dialogue_message_returns_assistant_reply(client):
     assert data["assistant_message"]["content"] == "Echo:5"
 
 
+async def test_post_dialogue_message_unknown_cohort_uses_ephemeral_llm(client):
+    missing_cohort = uuid.uuid4()
+    r = await client.post(
+        f"/api/v1/cohorts/{missing_cohort}/dialogues/messages",
+        json={
+            "membership_id": str(MEMBERSHIP_ID),
+            "channel": "telegram",
+            "content": "hello",
+        },
+    )
+    assert r.status_code == 200
+    data = r.json()
+    assert data["assistant_message"]["content"] == "Echo:5"
+    assert "dialogue_id" in data
+    assert "user_message_id" in data
+
+
+async def test_post_dialogue_message_unknown_cohort_continues_with_dialogue_id(client):
+    missing_cohort = uuid.uuid4()
+    mid = str(uuid.uuid4())
+    first = await client.post(
+        f"/api/v1/cohorts/{missing_cohort}/dialogues/messages",
+        json={
+            "membership_id": mid,
+            "channel": "web",
+            "content": "hello",
+        },
+    )
+    assert first.status_code == 200
+    dialogue_id = first.json()["dialogue_id"]
+
+    second = await client.post(
+        f"/api/v1/cohorts/{missing_cohort}/dialogues/messages",
+        json={
+            "membership_id": mid,
+            "dialogue_id": dialogue_id,
+            "channel": "web",
+            "content": "ab",
+        },
+    )
+    assert second.status_code == 200
+    assert second.json()["dialogue_id"] == dialogue_id
+    assert second.json()["assistant_message"]["content"] == "Echo:2"
+
+
+async def test_post_dialogue_message_unknown_cohort_foreign_dialogue_id_forbidden(client):
+    missing_cohort = uuid.uuid4()
+    mid_a = str(uuid.uuid4())
+    first = await client.post(
+        f"/api/v1/cohorts/{missing_cohort}/dialogues/messages",
+        json={
+            "membership_id": mid_a,
+            "channel": "telegram",
+            "content": "hello",
+        },
+    )
+    dialogue_id = first.json()["dialogue_id"]
+    second = await client.post(
+        f"/api/v1/cohorts/{missing_cohort}/dialogues/messages",
+        json={
+            "membership_id": str(MEMBERSHIP_ID),
+            "dialogue_id": dialogue_id,
+            "channel": "telegram",
+            "content": "b",
+        },
+    )
+    assert second.status_code == 403
+
+
+async def test_post_dialogue_message_unknown_cohort_wrong_dialogue_id_forbidden(client):
+    missing_cohort = uuid.uuid4()
+    r = await client.post(
+        f"/api/v1/cohorts/{missing_cohort}/dialogues/messages",
+        json={
+            "membership_id": str(MEMBERSHIP_ID),
+            "channel": "telegram",
+            "dialogue_id": str(uuid.uuid4()),
+            "content": "x",
+        },
+    )
+    assert r.status_code == 403
+    assert r.json()["error"]["code"] == "FORBIDDEN"
+
+
 async def test_post_dialogue_message_continues_same_dialogue_id(client):
     first = await client.post(
         f"/api/v1/cohorts/{COHORT_ID}/dialogues/messages",
