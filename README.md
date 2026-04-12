@@ -55,13 +55,30 @@ flowchart LR
 
 Нужен [uv](https://docs.astral.sh/uv/) (корень и `backend/` синхронизируются через lock-файлы).
 
-В **Linux/macOS** или при установленном [GNU Make](https://www.gnu.org/software/make/) удобны цели из [Makefile](Makefile). В **Windows** (PowerShell/cmd) команда `make` часто отсутствует — используйте команды из раздела [ниже](#windows-no-make) или поставьте Make (например [Chocolatey: `make`](https://community.chocolatey.org/packages/make), пакет MSYS2, Git Bash с make, [WSL](https://learn.microsoft.com/windows/wsl/)).
+В **Linux/macOS** или при установленном [GNU Make](https://www.gnu.org/software/make/) удобны цели из [Makefile](Makefile). В **Windows** (PowerShell/cmd) команда `make` часто отсутствует — используйте скрипт **[`tasks.ps1`](tasks.ps1)** (аналог Makefile), команды из раздела [ниже](#windows-no-make) или поставьте Make (например [Chocolatey: `make`](https://community.chocolatey.org/packages/make), пакет MSYS2, Git Bash с make, [WSL](https://learn.microsoft.com/windows/wsl/)).
 
-**Перед PR:** из корня выполните `make install`, затем `make lint` и `make test` (или [эквиваленты без make](#windows-no-make)). На GitHub те же шаги гоняет workflow [`.github/workflows/ci.yml`](.github/workflows/ci.yml).
+**Перед PR:** из корня выполните `make install`, затем `make lint` и `make test` — или **`.\tasks.ps1 install`**, **`.\tasks.ps1 lint`**, **`.\tasks.ps1 test`** — либо [эквиваленты вручную](#windows-no-make). На GitHub те же шаги гоняет workflow [`.github/workflows/ci.yml`](.github/workflows/ci.yml).
 
 <a id="windows-no-make"></a>
 
 ### Запуск без make (Windows)
+
+#### Скрипт `tasks.ps1` (как Makefile)
+
+Из **корня** репозитория, в **PowerShell** (нужны **uv**; для `db-*` — **docker** в PATH или задайте `$env:DOCKER_COMPOSE = 'wsl -e docker compose'`):
+
+```powershell
+.\tasks.ps1 help          # список целей
+.\tasks.ps1 install
+.\tasks.ps1 lint
+.\tasks.ps1 test-backend
+.\tasks.ps1 db-up
+.\tasks.ps1 db-migrate
+```
+
+Если выполнение скриптов запрещено политикой: `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned` (один раз). Переменные **`DOCKER_COMPOSE`**, **`POSTGRES_*`**, **`DATABASE_URL`** — те же, что в [Makefile](Makefile).
+
+#### Команды вручную
 
 Из **корня** репозитория — то же, что делают цели `Makefile`:
 
