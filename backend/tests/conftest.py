@@ -38,14 +38,22 @@ from tests.constants import (
 )
 
 
+def _async_engine_kwargs(database_url: str) -> dict:
+    if database_url.startswith("sqlite"):
+        return {
+            "poolclass": StaticPool,
+            "connect_args": {"check_same_thread": False},
+        }
+    return {}
+
+
 @pytest_asyncio.fixture
 async def engine():
     get_settings.cache_clear()
     settings = get_settings()
     eng = create_async_engine(
         settings.database_url,
-        poolclass=StaticPool,
-        connect_args={"check_same_thread": False},
+        **_async_engine_kwargs(settings.database_url),
     )
     async with eng.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)

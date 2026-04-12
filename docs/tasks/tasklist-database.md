@@ -17,9 +17,9 @@
 | ------ | ---------------------------------------------------------------------------------------- | ---------------- | ------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | 01     | Сценарии студент/преподаватель и требования к данным (без глубокой техники)              | [1](#block-db-1) | ✅     | [план](impl/database/iteration-3-database/tasks/task-01-scenarios-data-reqs/plan.md) | [summary](impl/database/iteration-3-database/tasks/task-01-scenarios-data-reqs/summary.md)   |
 | 02     | Схема данных: логика + физика, ER, ревью postgresql-table-design                         | [2](#block-db-2) | ✅     | [план](impl/database/iteration-3-database/tasks/task-02-schema-er-review/plan.md) | [summary](impl/database/iteration-3-database/tasks/task-02-schema-er-review/summary.md)         |
-| 03     | ADR операций с БД + справка `db-tooling-guide.md` (Alembic, URL, make)                 | [3](#block-db-3) | 📋     | [план](impl/database/iteration-3-database/tasks/task-03-adr-db-tooling-guide/plan.md) | [summary](impl/database/iteration-3-database/tasks/task-03-adr-db-tooling-guide/summary.md) |
-| 04     | Postgres в Docker, пересоздание окружения, миграции, сид из `progress-import`, make-цели | [4](#block-db-4) | 📋     | [план](impl/database/iteration-3-database/tasks/task-04-infra-seed-import/plan.md) | [summary](impl/database/iteration-3-database/tasks/task-04-infra-seed-import/summary.md)       |
-| 05     | ORM, слой доступа к данным, интеграция backend под PostgreSQL, проверка API              | [5](#block-db-5) | 📋     | [план](impl/database/iteration-3-database/tasks/task-05-orm-repos-pg/plan.md) | [summary](impl/database/iteration-3-database/tasks/task-05-orm-repos-pg/summary.md)                 |
+| 03     | ADR операций с БД + справка `db-tooling-guide.md` (Alembic, URL, make)                 | [3](#block-db-3) | ✅     | [план](impl/database/iteration-3-database/tasks/task-03-adr-db-tooling-guide/plan.md) | [summary](impl/database/iteration-3-database/tasks/task-03-adr-db-tooling-guide/summary.md) |
+| 04     | Postgres в Docker, пересоздание окружения, миграции, сид из `progress-import`, make-цели | [4](#block-db-4) | ✅     | [план](impl/database/iteration-3-database/tasks/task-04-infra-seed-import/plan.md) | [summary](impl/database/iteration-3-database/tasks/task-04-infra-seed-import/summary.md)       |
+| 05     | ORM, слой доступа к данным, интеграция backend под PostgreSQL, проверка API              | [5](#block-db-5) | ✅     | [план](impl/database/iteration-3-database/tasks/task-05-orm-repos-pg/plan.md) | [summary](impl/database/iteration-3-database/tasks/task-05-orm-repos-pg/summary.md)                 |
 
 
 **Документы итерации:** [план итерации](impl/database/iteration-3-database/plan.md)  [summary итерации](impl/database/iteration-3-database/summary.md)
@@ -127,14 +127,14 @@
 
 **Для агента:**
 
-- `docs/adr/adr-001-database.md` содержит обоснование выбора с разбором альтернатив (psycopg2, databases, tortoise-orm)
+- `docs/adr/adr-004-db-tooling.md` зафиксированы практики репозитория и соглашения по схеме; выбор стека SQLAlchemy 2.x async + asyncpg + Alembic и разбор альтернатив (ORM, драйвер) — в `docs/adr/adr-002-backend-stack.md`
 - `docs/tech/db-tooling-guide.md` описывает конкретные команды и структуру файлов в нашем проекте, не абстрактно
 - Соглашения зафиксированы (snake_case, plurals, UUID vs serial, timestamptz)
 
 **Для пользователя:**
 
 - Открыть `docs/tech/db-tooling-guide.md` — по нему можно создать новую миграцию не гугля
-- Открыть `docs/adr/adr-001-database.md` — понятно, почему именно эти инструменты
+- Открыть `docs/adr/adr-002-backend-stack.md` и `docs/adr/adr-004-db-tooling.md` — понятно, почему выбран стек и как им пользоваться в репозитории
 
 ### **Артефакты**
 
@@ -158,8 +158,8 @@
 - Убедиться, что Alembic в `backend/`: `alembic.ini`, `backend/migrations/` (как в соглашениях проекта)
 - Написать первую миграцию по схеме из Итерации 1 (все таблицы)
 - Написать data-миграцию импорта из `data/progress-import.v1.json`
-- Добавить `make`-команды: `db-up`, `db-down`, `db-reset`, `db-migrate`, `db-shell` (наполнение — вторая миграция)
-- Проверить: миграции применяются с нуля, `0002_seed_progress` отрабатывает без ошибок, данные видны в `db-shell`
+- Добавить `make`-команды: `db-up`, `db-down`, `db-reset`, `db-migrate`, `db-shell` (наполнение данных — ревизия `0003_seed_progress` после `0002_user_name`)
+- Проверить: миграции применяются с нуля, ревизия сида `0003_seed_progress` отрабатывает без ошибок, данные видны в `db-shell`
 - Обновить `docs/tech/db-tooling-guide.md` — добавить новые make-команды и другие документы Makefile
 - Самопроверка по критериям DoD
 
@@ -167,10 +167,10 @@
 
 **Для агента:**
 
-- `make db-up` поднимает PostgreSQL, `make db-migrate` применяет все миграции без ошибок (`0001`, `0002`)
-- Миграция `0002_seed_progress` импортирует данные из `progress-import.v1.json`: студенты, поток, прогресс
+- `make db-up` поднимает PostgreSQL, `make db-migrate` применяет все миграции без ошибок (`0001_initial`, `0002_user_name`, `0003_seed_progress`)
+- Миграция `0003_seed_progress` импортирует данные из `progress-import.v1.json`: студенты, поток, прогресс
 - `make db-reset` = down (с volume) + up + migrate — воспроизводимо с нуля
-- `make db-shell` открывает psql; проверки: поток `M05 LLM Start Fullstack`, 13 студентов, 3 урока, 24 `progress` со статусом `done`
+- `make db-shell` открывает psql; проверки: поток `M05 LLM Start Fullstack`, 13 студентов, 3 урока, 24 `progress_records` со статусом `completed` (в JSON импорта — `done`)
 
 **Для пользователя:**
 
@@ -181,7 +181,7 @@
 ### **Артефакты**
 
 - `docker-compose.yml` — сервис PostgreSQL
-- `backend/alembic.ini`, `backend/migrations/` — Alembic (в т.ч. сид `0002_seed_progress` или следующая ревизия)
+- `backend/alembic.ini`, `backend/migrations/` — Alembic (в т.ч. сид `0003_seed_progress`)
 - `backend/app/domain/` — ORM-модели под схему (`target_metadata` для Alembic)
 - `Makefile` — команды `db-`*
 - `docs/tech/db-tooling-guide.md` — обновлённая справка с командами

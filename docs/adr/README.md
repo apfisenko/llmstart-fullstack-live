@@ -16,3 +16,4 @@
 |---|------|--------|--------------|------|
 | 001 | Основная СУБД проекта (PostgreSQL) | Принято | 2026-04-05 | [adr-001-database.md](adr-001-database.md) |
 | 002 | HTTP-слой и доступ к данным в backend (FastAPI, SQLAlchemy async, Alembic) | Принято | 2026-04-06 | [adr-002-backend-stack.md](adr-002-backend-stack.md) |
+| 004 | Практики и соглашения по работе с БД в репозитории (миграции, именование, репозитории) | Принято | 2026-04-12 | [adr-004-db-tooling.md](adr-004-db-tooling.md) |

@@ -3,36 +3,22 @@ from __future__ import annotations
 from typing import Optional
 from uuid import UUID
 
-from sqlalchemy import select
-from sqlalchemy.orm import selectinload
-
 from app.api.errors import ApiError
-from app.domain.models import (
-    Cohort,
-    CohortMembership,
-    MembershipRole,
-    ProgressCheckpoint,
-    ProgressRecord,
-    ProgressStatus,
-    User,
-)
+from app.domain.models import MembershipRole, ProgressRecord, ProgressStatus, User
+from app.infrastructure.repositories.cohort_progress_repository import CohortProgressRepository
 
 
 class CohortService:
     def __init__(self, session) -> None:
         self._session = session
+        self._progress = CohortProgressRepository(session)
 
     async def list_progress_checkpoints(self, cohort_id: UUID) -> dict:
-        cohort = await self._session.get(Cohort, cohort_id)
+        cohort = await self._progress.get_cohort(cohort_id)
         if cohort is None:
             raise ApiError(404, "NOT_FOUND", "Cohort not found")
 
-        stmt = (
-            select(ProgressCheckpoint)
-            .where(ProgressCheckpoint.cohort_id == cohort_id)
-            .order_by(ProgressCheckpoint.sort_order, ProgressCheckpoint.id)
-        )
-        rows = (await self._session.scalars(stmt)).all()
+        rows = await self._progress.checkpoints_ordered(cohort_id)
         return {
             "items": [
                 {
@@ -55,33 +41,18 @@ class CohortService:
         status: str,
         comment: Optional[str],
     ) -> dict:
-        membership = await self._session.scalar(
-            select(CohortMembership).where(
-                CohortMembership.id == membership_id,
-                CohortMembership.cohort_id == cohort_id,
-            )
-        )
+        membership = await self._progress.membership_in_cohort(cohort_id, membership_id)
         if membership is None:
             raise ApiError(404, "NOT_FOUND", "Membership not found")
         if membership.role != MembershipRole.student:
             raise ApiError(403, "FORBIDDEN", "Forbidden")
 
-        checkpoint = await self._session.scalar(
-            select(ProgressCheckpoint).where(
-                ProgressCheckpoint.id == checkpoint_id,
-                ProgressCheckpoint.cohort_id == cohort_id,
-            )
-        )
+        checkpoint = await self._progress.checkpoint_in_cohort(cohort_id, checkpoint_id)
         if checkpoint is None:
             raise ApiError(404, "NOT_FOUND", "Checkpoint not found")
 
         st = ProgressStatus(status)
-        record = await self._session.scalar(
-            select(ProgressRecord).where(
-                ProgressRecord.membership_id == membership_id,
-                ProgressRecord.checkpoint_id == checkpoint_id,
-            )
-        )
+        record = await self._progress.progress_record(membership_id, checkpoint_id)
         if record is None:
             record = ProgressRecord(
                 membership_id=membership_id,
@@ -89,7 +60,7 @@ class CohortService:
                 status=st,
                 comment=comment,
             )
-            self._session.add(record)
+            self._progress.add_progress_record(record)
         else:
             record.status = st
             record.comment = comment
@@ -108,46 +79,21 @@ class CohortService:
         }
 
     async def get_summary(self, cohort_id: UUID, viewer_membership_id: UUID) -> dict:
-        cohort = await self._session.get(Cohort, cohort_id)
+        cohort = await self._progress.get_cohort(cohort_id)
         if cohort is None:
             raise ApiError(404, "NOT_FOUND", "Cohort not found")
 
-        viewer = await self._session.scalar(
-            select(CohortMembership).where(
-                CohortMembership.id == viewer_membership_id,
-                CohortMembership.cohort_id == cohort_id,
-            )
-        )
+        viewer = await self._progress.membership_in_cohort(cohort_id, viewer_membership_id)
         if viewer is None:
             raise ApiError(404, "NOT_FOUND", "Membership not found")
         if viewer.role != MembershipRole.teacher:
             raise ApiError(403, "FORBIDDEN", "Forbidden")
 
-        checkpoints = (
-            await self._session.scalars(
-                select(ProgressCheckpoint)
-                .where(ProgressCheckpoint.cohort_id == cohort_id)
-                .order_by(ProgressCheckpoint.sort_order, ProgressCheckpoint.id)
-            )
-        ).all()
-
-        memberships = (
-            await self._session.scalars(
-                select(CohortMembership)
-                .options(selectinload(CohortMembership.user))
-                .where(CohortMembership.cohort_id == cohort_id)
-            )
-        ).all()
+        checkpoints = await self._progress.checkpoints_ordered(cohort_id)
+        memberships = await self._progress.memberships_with_users(cohort_id)
 
         m_ids = [m.id for m in memberships]
-        if not m_ids:
-            records = []
-        else:
-            records = (
-                await self._session.scalars(
-                    select(ProgressRecord).where(ProgressRecord.membership_id.in_(m_ids))
-                )
-            ).all()
+        records = await self._progress.progress_records_for_memberships(m_ids)
         rec_map: dict[tuple[UUID, UUID], ProgressStatus] = {}
         for r in records:
             rec_map[(r.membership_id, r.checkpoint_id)] = r.status

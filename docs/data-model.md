@@ -377,6 +377,16 @@ erDiagram
 
 ---
 
+## Соответствие реализации backend (на момент задачи 05)
+
+- **Ходы диалога:** ORM-класс `DialogueTurn` → таблица `dialogue_turns`; миграция Alembic `0004_dialogue_turns` переносит данные из `dialogue_messages`, если та присутствовала (старые БД). Свежий `make db-reset` получает `dialogue_turns` уже из `Base.metadata.create_all` на шаге `0001_initial`.
+- **Перечисления:** в коде `SAEnum(..., native_enum=False)` — в PostgreSQL значения хранятся как строки (VARCHAR), а не как отдельные типы `ENUM` из раздела «Перечисления» выше; это сознательное упрощение до отдельной миграции под нативные ENUM.
+- **Колонки FK:** в ORM для `progress_records` используются имена `membership_id` и `checkpoint_id` (не `cohort_membership_id` / `progress_checkpoint_id` из ER-текста) — семантика та же.
+- **Пользователь:** в БД и ORM колонка отображаемого имени — `name`; импорт Telegram в сиде пишет в `telegram_user_id` (строка), что расходится с `bigint telegram_id` в целевой ER — см. также ADR и последующие выравнивающие миграции при необходимости.
+- **Доступ к данным:** репозитории в `backend/app/infrastructure/repositories/`, сценарии HTTP — в `backend/app/services/`.
+
+---
+
 ## Выбор СУБД
 
 Полное обоснование, альтернативы и последствия — в **[ADR-001](adr/adr-001-database.md)**. Ниже — краткое резюме для модели данных.

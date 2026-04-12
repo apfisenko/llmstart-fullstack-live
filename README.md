@@ -73,6 +73,7 @@ flowchart LR
 | `format` | `uv run ruff format bot` и `uv run ruff check --fix bot`; затем в `backend\`: `uv run ruff format app tests` и `uv run ruff check --fix app tests` |
 | `test` / `test-backend` | в `backend\`: `uv sync --extra dev`, затем `uv run pytest` |
 | `migrate-backend` | в `backend\`: `uv sync --extra dev`, затем `uv run alembic upgrade head` |
+| `db-migrate-test` (из корня, нужен `make`) | `db-migrate`, затем `test-backend` (pytest изолирован на SQLite, см. `conftest`). Без make: задайте `DATABASE_URL` на Postgres, выполните строку для `migrate-backend`, затем сбросьте `DATABASE_URL` и строку для `test-backend`. |
 
 В **cmd** одной строкой для backend (как в Makefile): `cd backend && uv sync --extra dev && uv run pytest` и `cd backend && uv sync --extra dev && uv run alembic upgrade head`. В **PowerShell 5.1** надёжнее три отдельные строки (`cd backend`, `uv sync ...`, `uv run ...`); в **PowerShell 7+** допустим оператор `&&`.
 
@@ -96,6 +97,8 @@ uv run uvicorn app.main:app --host 127.0.0.1 --port 8000
 Для **тестов** и **миграций Alembic** нужен dev-набор: `uv sync --extra dev`.
 
 **База данных:** если `DATABASE_URL` не задан или пустой, используется **SQLite** (`./llmstart_local.sqlite` в текущем каталоге процесса); схема для SQLite создаётся при старте приложения, **отдельный шаг миграций не нужен**. Для **PostgreSQL** задайте `DATABASE_URL` (`postgresql+asyncpg://...`) и из **корня** репозитория выполните **`make migrate-backend`** (внутри: `cd backend && uv sync --extra dev && uv run alembic upgrade head`). На Windows без make — строка **`migrate-backend`** в [таблице выше](#windows-no-make).
+
+На **Windows**, если **Docker** доступен только в **WSL** (`docker` не в PATH в PowerShell), поднимайте Postgres из WSL (`docker compose up`), а **Alembic** и **`uv run pytest`** запускайте на хосте с `DATABASE_URL` на `127.0.0.1:5432` для миграций; перед **pytest** сбросьте `DATABASE_URL`, чтобы тесты шли на SQLite in-memory (подробно — [docs/tech/db-tooling-guide.md](docs/tech/db-tooling-guide.md), раздел «Смешанный режим»). Цель **`make db-migrate-test`** после **`make db-up`**: миграции + тесты.
 
 **Проверка после запуска:**
 
@@ -142,6 +145,17 @@ make run
 На MVP один `MEMBERSHIP_ID` в `.env` используется для всех пользователей Telegram; для продакшена нужна отдельная привязка аккаунтов.
 
 `PROXY_URL` в корневом `.env` используется **только для Telegram** (aiogram). Запросы бота к `BACKEND_BASE_URL` идут **напрямую**; отдельный прокси для backend — переменная `BACKEND_HTTP_PROXY` (см. [`.env.example`](.env.example)).
+
+**Если бот «молчит» или нет ответа на текст:**
+
+1. **Пишите в личку боту**, не в группу: в группах включена **privacy mode** — бот не видит обычные сообщения, только команды и упоминания. В коде бота ответ в группе заменён на подсказку открыть личный чат.
+2. **Backend запущен** и доступен с машины, где крутится бот: `GET http://127.0.0.1:8000/health` (или ваш `BACKEND_BASE_URL`). Иначе бот ответит строкой про недоступность сервера.
+3. Если в `backend/.env` задан **`BACKEND_API_CLIENT_TOKEN`**, в корневом `.env` для бота должно быть **то же значение** — иначе `401` и ответ «Нет доступа к сервису».
+4. У **@BotFather** для бота не должен быть активен **webhook**, если вы используете **polling** (`make run`): при необходимости сбросьте webhook через Bot API или @BotFather.
+5. **`PROXY_URL`** (только Telegram): если задан неверный или недоступный прокси, запросы к Telegram API зависают и падают с `ProxyTimeoutError` — оставьте переменную **пустой**, если прокси не нужен.
+6. Ответ бота «Не удалось получить ответ» при **502** от backend: смотрите лог **uvicorn** — строка `llm_upstream_4xx` с подсказкой от провайдера. Обычно это неверный или пустой **`OPENROUTER_API_KEY`**, лимит, имя модели или блокировка исходящего HTTPS (в т.ч. **`PROXY_URL`** в `backend/.env` для вызова OpenRouter).
+
+Запускайте бота из репозитория через **`uv run python -m bot.main`** (как в `make run`), а не глобальный Python с устаревшими пакетами в `AppData\Roaming\Python`.
 
 ### Полный стек (бот + backend + CI)
 

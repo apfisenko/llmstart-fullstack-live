@@ -1,0 +1,21 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: llmstart-postgres
+    environment:
+      POSTGRES_USER: llmstart
+      POSTGRES_PASSWORD: llmstart
+      POSTGRES_DB: llmstart
+    ports:
+      - "5432:5432"
+    volumes:
+      - llmstart_pg_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U llmstart -d llmstart"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 5s
+
+volumes:
+  llmstart_pg_data:

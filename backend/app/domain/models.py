@@ -7,8 +7,10 @@ from typing import Optional
 
 from sqlalchemy import (
     Boolean,
+    CheckConstraint,
     DateTime,
     ForeignKey,
+    Index,
     String,
     Text,
     UniqueConstraint,
@@ -39,12 +41,6 @@ class DialogueChannel(str, enum.Enum):
 class DialogueState(str, enum.Enum):
     active = "active"
     archived = "archived"
-
-
-class MessageRole(str, enum.Enum):
-    user = "user"
-    assistant = "assistant"
-    system = "system"
 
 
 class ProgressStatus(str, enum.Enum):
@@ -139,28 +135,44 @@ class Dialogue(Base):
     )
 
     membership: Mapped[CohortMembership] = relationship(back_populates="dialogues")
-    messages: Mapped[list[DialogueMessage]] = relationship(
-        back_populates="dialogue", order_by="DialogueMessage.created_at"
+    turns: Mapped[list[DialogueTurn]] = relationship(
+        back_populates="dialogue",
+        order_by="DialogueTurn.asked_at",
     )
 
 
-class DialogueMessage(Base):
-    __tablename__ = "dialogue_messages"
+class DialogueTurn(Base):
+    __tablename__ = "dialogue_turns"
+    __table_args__ = (
+        UniqueConstraint(
+            "assistant_message_id",
+            name="uq_dialogue_turns_assistant_message_id",
+        ),
+        CheckConstraint(
+            "answered_at >= asked_at",
+            name="ck_dialogue_turns_answer_after_question",
+        ),
+        Index("ix_dialogue_turns_dialogue_asked", "dialogue_id", "asked_at"),
+    )
 
     id: Mapped[uuid.UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    assistant_message_id: Mapped[uuid.UUID] = mapped_column(
+        Uuid(as_uuid=True),
+        nullable=False,
+    )
     dialogue_id: Mapped[uuid.UUID] = mapped_column(
         Uuid(as_uuid=True),
         ForeignKey("dialogues.id", ondelete="CASCADE"),
         nullable=False,
     )
-    role: Mapped[MessageRole] = mapped_column(
-        SAEnum(MessageRole, name="message_role", native_enum=False),
-        nullable=False,
+    question_text: Mapped[str] = mapped_column(Text, nullable=False)
+    answer_text: Mapped[str] = mapped_column(Text, nullable=False)
+    asked_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    answered_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now()
     )
-    content: Mapped[str] = mapped_column(Text, nullable=False)
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
-    dialogue: Mapped[Dialogue] = relationship(back_populates="messages")
+    dialogue: Mapped[Dialogue] = relationship(back_populates="turns")
 
 
 class ProgressCheckpoint(Base):

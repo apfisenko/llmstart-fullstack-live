@@ -20,7 +20,7 @@
 
 | Метод | Путь | Назначение |
 |-------|------|------------|
-| `POST` | `/api/v1/cohorts/{cohort_id}/dialogues/messages` | Сообщение в диалог: создать/продолжить `Dialogue`, сохранить `DialogueMessage`, вызвать LLM, вернуть ответ ассистента |
+| `POST` | `/api/v1/cohorts/{cohort_id}/dialogues/messages` | Сообщение в диалог: создать/продолжить `Dialogue`, сохранить ход (`DialogueTurn`), вызвать LLM, вернуть ответ ассистента |
 | `POST` | `/api/v1/dialogues/{dialogue_id}/reset` | Сброс контекста диалога (аналог `/reset` в боте) |
 | `POST` | `/api/v1/assistant/guest/messages` | Временный диалог без БД: LLM + история в памяти процесса (`guest_session_key` от клиента) |
 | `POST` | `/api/v1/assistant/guest/reset` | Сброс гостевой сессии по `guest_session_key` |
@@ -37,7 +37,7 @@
 | `Cohort` | `cohort_id` в пути |
 | `CohortMembership` | `membership_id` в теле (`POST ... dialogues/messages`) и в пути (progress-records) |
 | `Dialogue` | создаётся/продолжается при `POST ... dialogues/messages`; `dialogue_id` в ответе и опционально в запросе |
-| `DialogueMessage` | `user_message_id`, блок `assistant_message.{id, content, created_at}` в ответе |
+| `DialogueTurn` | в ответе — `user_message_id` (= `id` хода), блок `assistant_message.{id, content, created_at}` (= `assistant_message_id` и метаданные ответа) |
 | `ProgressCheckpoint` | список в `GET ... progress-checkpoints` и в ответе `summary` |
 | `ProgressRecord` | `PUT ... progress-records/{checkpoint_id}` и данные в summary |
 

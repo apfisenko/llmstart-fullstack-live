@@ -114,7 +114,21 @@ class OpenRouterLlmAssistant:
             raise LlmInvocationError(http_status=503, error_code="LLM_UNAVAILABLE")
 
         if response.status_code >= 400:
-            logger.warning("llm_upstream_4xx status=%s", response.status_code)
+            hint = ""
+            try:
+                data = response.json()
+                err = data.get("error")
+                if isinstance(err, dict):
+                    hint = str(err.get("message") or err.get("code") or "")[:240]
+                elif isinstance(err, str):
+                    hint = err[:240]
+            except (json.JSONDecodeError, TypeError, ValueError):
+                hint = (response.text or "")[:240]
+            logger.warning(
+                "llm_upstream_4xx status=%s hint=%s",
+                response.status_code,
+                hint or "(no body)",
+            )
             raise LlmInvocationError(http_status=502, error_code="LLM_BAD_GATEWAY")
 
         try:
