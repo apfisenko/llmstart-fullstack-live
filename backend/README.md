@@ -27,10 +27,17 @@ uv run uvicorn app.main:app --host 127.0.0.1 --port 8000
 
 ## Тесты
 
-Из **корня** репозитория: `make test` или `make test-backend` (после `make install`). Из каталога `backend/` после `uv sync --extra dev`:
+Два набора, **разные команды**:
 
-```bash
-uv run pytest
-```
+| СУБД | Каталог | Корень репо | Только `backend/` |
+|------|---------|-------------|-------------------|
+| **PostgreSQL** (`*_test`) | `tests/pg/` | `make test-backend` | `uv run pytest tests/pg` + `TEST_DATABASE_URL` на `…/llmstart_test` |
+| **SQLite** in-memory | `tests/sqlite/` | `make test-backend-sqlite` | `uv run pytest tests/sqlite` |
 
-По умолчанию pytest использует SQLite в памяти (не требует PostgreSQL). Для проверки против реальной БД задайте `DATABASE_URL` на PostgreSQL и при необходимости выполните миграции перед прогоном.
+Общие фикстуры — [`tests/api_fixtures.py`](tests/api_fixtures.py), подключаются из [`tests/conftest.py`](tests/conftest.py). Перед каждым тестом схема из ORM пересоздаётся (`drop_all` / `create_all`).
+
+**PostgreSQL:** `make db-up`, при необходимости `make db-test-create`, затем `make test-backend`. **`make db-migrate-test`** — миграции `llmstart`, создание тестовой БД, затем только **`tests/pg`**.
+
+**SQLite:** без Docker, только `make test-backend-sqlite` или `uv run pytest tests/sqlite`.
+
+По умолчанию `uv run pytest` (без пути) смотрит в **`tests/pg`** — см. [`pyproject.toml`](pyproject.toml).

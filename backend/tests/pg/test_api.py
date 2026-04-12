@@ -23,6 +23,12 @@ async def test_health_ok(client):
     assert response.json() == {"status": "ok"}
 
 
+async def test_health_db_ok(client):
+    response = await client.get("/health/db")
+    assert response.status_code == 200
+    assert response.json() == {"status": "ok", "database": "ok"}
+
+
 async def test_post_dialogue_message_returns_assistant_reply(client):
     response = await client.post(
         f"/api/v1/cohorts/{COHORT_ID}/dialogues/messages",

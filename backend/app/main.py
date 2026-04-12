@@ -7,8 +7,9 @@ from contextlib import asynccontextmanager
 from typing import Optional
 
 import httpx
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
+from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, async_sessionmaker
 
 from app.api.errors import ApiError
@@ -23,6 +24,8 @@ from app.infrastructure.llm_assistant import (
     StubLlmAssistant,
 )
 from app.services.guest_dialogue_service import GuestDialogueService
+
+logger = logging.getLogger(__name__)
 
 
 def create_app(
@@ -117,6 +120,20 @@ def create_app(
     @application.get("/health")
     async def health():
         return {"status": "ok"}
+
+    @application.get("/health/db")
+    async def health_db(request: Request):
+        engine = request.app.state.engine
+        try:
+            async with engine.connect() as conn:
+                await conn.execute(text("SELECT 1"))
+        except Exception:
+            logger.exception("Database health check failed")
+            return JSONResponse(
+                status_code=503,
+                content={"status": "error", "database": "unavailable"},
+            )
+        return {"status": "ok", "database": "ok"}
 
     return application
 

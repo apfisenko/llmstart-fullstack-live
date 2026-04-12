@@ -25,8 +25,12 @@ Set-Location $RepoRoot
 if (-not $env:POSTGRES_USER) { $env:POSTGRES_USER = "llmstart" }
 if (-not $env:POSTGRES_PASSWORD) { $env:POSTGRES_PASSWORD = "llmstart" }
 if (-not $env:POSTGRES_DB) { $env:POSTGRES_DB = "llmstart" }
+if (-not $env:POSTGRES_TEST_DB) { $env:POSTGRES_TEST_DB = "llmstart_test" }
 if (-not $env:DATABASE_URL) {
     $env:DATABASE_URL = "postgresql+asyncpg://$($env:POSTGRES_USER):$($env:POSTGRES_PASSWORD)@127.0.0.1:5432/$($env:POSTGRES_DB)"
+}
+if (-not $env:TEST_DATABASE_URL) {
+    $env:TEST_DATABASE_URL = "postgresql+asyncpg://$($env:POSTGRES_USER):$($env:POSTGRES_PASSWORD)@127.0.0.1:5432/$($env:POSTGRES_TEST_DB)"
 }
 
 function Invoke-DockerCompose {
@@ -92,7 +96,41 @@ function Task-Format {
 
 function Task-TestBackend {
     Invoke-Backend @("uv", "sync", "--extra", "dev")
-    Invoke-Backend @("uv", "run", "pytest")
+    Invoke-Backend @("uv", "run", "pytest", "tests/pg")
+}
+
+function Task-TestBackendSqlite {
+    Invoke-Backend @("uv", "sync", "--extra", "dev")
+    Invoke-Backend @("uv", "run", "pytest", "tests/sqlite")
+}
+
+function Task-TestAll {
+    Task-TestBackend
+    Task-TestBackendSqlite
+}
+
+function Task-DbTestCreate {
+    $db = $env:POSTGRES_TEST_DB
+    $prefix = if ($env:DOCKER_COMPOSE) { $env:DOCKER_COMPOSE.Trim() } else { "docker compose" }
+    $head = $prefix -split "\s+"
+    $exe = $head[0]
+    $rest = @()
+    if ($head.Count -gt 1) {
+        $rest = $head[1..($head.Length - 1)]
+    }
+    $psqlBase = $rest + @(
+        "exec", "-T", "-e", "PGPASSWORD=$($env:POSTGRES_PASSWORD)", "postgres",
+        "psql", "-U", $env:POSTGRES_USER, "-d", "postgres"
+    )
+    $check = & $exe @($psqlBase + @("-tc", "SELECT 1 FROM pg_database WHERE datname='$db'"))
+    # @(...) — всегда массив (StrictMode: у скаляра нет .Count; пустой pipeline → 0 элементов).
+    $exists = (@($check | Where-Object { $_ -match "^\s*1\s*$" })).Count -gt 0
+    if (-not $exists) {
+        & $exe @($psqlBase + @("-c", "CREATE DATABASE $db OWNER $($env:POSTGRES_USER);"))
+        if ($LASTEXITCODE -ne 0 -and $null -ne $LASTEXITCODE) {
+            exit $LASTEXITCODE
+        }
+    }
 }
 
 function Task-BackendDev {
@@ -125,6 +163,7 @@ function Task-DbReset {
 
 function Task-DbMigrateTest {
     Task-DbMigrate
+    Task-DbTestCreate
     Task-TestBackend
 }
 
@@ -146,16 +185,20 @@ Usage: .\tasks.ps1 <target>
   lint, backend-lint      ruff (bot + backend)
   format                  ruff format + fix
   test, test-backend, backend-test
-                          pytest in backend/
+                          pytest tests/pg (PostgreSQL)
+  test-backend-sqlite, backend-test-sqlite
+                          pytest tests/sqlite (SQLite in-memory)
+  test-all                test-backend then test-backend-sqlite
   backend-dev             uvicorn --reload
   backend-typecheck       note about mypy
   db-up, db-down          docker compose
   db-reset                down -v, up --wait, migrate
   db-migrate, migrate-backend
+  db-test-create          CREATE llmstart_test if missing (pytest DB)
   db-migrate-test, migrate-backend-test
   db-shell                psql in postgres container
 
-Env: DOCKER_COMPOSE, POSTGRES_*, DATABASE_URL (see Makefile).
+Env: DOCKER_COMPOSE, POSTGRES_*, POSTGRES_TEST_DB, DATABASE_URL, TEST_DATABASE_URL (see Makefile).
 
 Docker via WSL only:
   `$env:DOCKER_COMPOSE = 'wsl -e docker compose'; .\tasks.ps1 db-up
@@ -168,12 +211,15 @@ switch -Regex ($Task.ToLowerInvariant()) {
     "^(lint|backend-lint)$" { Task-Lint }
     "^(format)$" { Task-Format }
     "^(test|test-backend|backend-test)$" { Task-TestBackend }
+    "^(test-backend-sqlite|backend-test-sqlite)$" { Task-TestBackendSqlite }
+    "^(test-all)$" { Task-TestAll }
     "^(backend-dev)$" { Task-BackendDev }
     "^(backend-typecheck)$" { Task-BackendTypecheck }
     "^(db-up)$" { Task-DbUp }
     "^(db-down)$" { Task-DbDown }
     "^(db-migrate|migrate-backend)$" { Task-DbMigrate }
     "^(db-reset)$" { Task-DbReset }
+    "^(db-test-create)$" { Task-DbTestCreate }
     "^(db-migrate-test|migrate-backend-test)$" { Task-DbMigrateTest }
     "^(db-shell)$" { Task-DbShell }
     "^(help|-h|--help|\?)$" { Show-Help }

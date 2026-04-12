@@ -76,7 +76,7 @@ flowchart LR
 .\tasks.ps1 db-migrate
 ```
 
-Если выполнение скриптов запрещено политикой: `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned` (один раз). Переменные **`DOCKER_COMPOSE`**, **`POSTGRES_*`**, **`DATABASE_URL`** — те же, что в [Makefile](Makefile).
+Если выполнение скриптов запрещено политикой: `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned` (один раз). Переменные **`DOCKER_COMPOSE`**, **`POSTGRES_*`**, **`POSTGRES_TEST_DB`**, **`DATABASE_URL`**, **`TEST_DATABASE_URL`** — те же, что в [Makefile](Makefile).
 
 #### Команды вручную
 
@@ -88,9 +88,11 @@ flowchart LR
 | `run` | `uv run python -m bot.main` |
 | `lint` | `uv run ruff check bot` и `uv run ruff format --check bot`; затем в `backend\`: `uv run ruff check app tests` и `uv run ruff format --check app tests` |
 | `format` | `uv run ruff format bot` и `uv run ruff check --fix bot`; затем в `backend\`: `uv run ruff format app tests` и `uv run ruff check --fix app tests` |
-| `test` / `test-backend` | в `backend\`: `uv sync --extra dev`, затем `uv run pytest` |
+| `test` / `test-backend` | в `backend\`: `uv sync --extra dev`, `uv run pytest tests/pg` (Postgres `*_test`; `tasks.ps1` выставляет `TEST_DATABASE_URL`) |
+| `test-backend-sqlite` | в `backend\`: `uv sync --extra dev`, `uv run pytest tests/sqlite` (SQLite, без Postgres) |
+| `test-all` | `test-backend`, затем `test-backend-sqlite` |
 | `migrate-backend` | в `backend\`: `uv sync --extra dev`, затем `uv run alembic upgrade head` |
-| `db-migrate-test` (из корня, нужен `make`) | `db-migrate`, затем `test-backend` (pytest изолирован на SQLite, см. `conftest`). Без make: задайте `DATABASE_URL` на Postgres, выполните строку для `migrate-backend`, затем сбросьте `DATABASE_URL` и строку для `test-backend`. |
+| `db-migrate-test` | `db-migrate`, `db-test-create`, `test-backend` (pytest на **`TEST_DATABASE_URL`** → обычно `llmstart_test`). |
 
 В **cmd** одной строкой для backend (как в Makefile): `cd backend && uv sync --extra dev && uv run pytest` и `cd backend && uv sync --extra dev && uv run alembic upgrade head`. В **PowerShell 5.1** надёжнее три отдельные строки (`cd backend`, `uv sync ...`, `uv run ...`); в **PowerShell 7+** допустим оператор `&&`.
 
@@ -115,7 +117,7 @@ uv run uvicorn app.main:app --host 127.0.0.1 --port 8000
 
 **База данных:** если `DATABASE_URL` не задан или пустой, используется **SQLite** (`./llmstart_local.sqlite` в текущем каталоге процесса); схема для SQLite создаётся при старте приложения, **отдельный шаг миграций не нужен**. Для **PostgreSQL** задайте `DATABASE_URL` (`postgresql+asyncpg://...`) и из **корня** репозитория выполните **`make migrate-backend`** (внутри: `cd backend && uv sync --extra dev && uv run alembic upgrade head`). На Windows без make — строка **`migrate-backend`** в [таблице выше](#windows-no-make).
 
-На **Windows**, если **Docker** доступен только в **WSL** (`docker` не в PATH в PowerShell), поднимайте Postgres из WSL (`docker compose up`), а **Alembic** и **`uv run pytest`** запускайте на хосте с `DATABASE_URL` на `127.0.0.1:5432` для миграций; перед **pytest** сбросьте `DATABASE_URL`, чтобы тесты шли на SQLite in-memory (подробно — [docs/tech/db-tooling-guide.md](docs/tech/db-tooling-guide.md), раздел «Смешанный режим»). Цель **`make db-migrate-test`** после **`make db-up`**: миграции + тесты.
+На **Windows**, если **Docker** только в **WSL**, поднимайте Postgres из WSL, **Alembic** — с `DATABASE_URL` на `127.0.0.1:5432`, **pytest** — с **`TEST_DATABASE_URL`** на БД `*_test` (например `llmstart_test`): это делает **`make test-backend`** / **`.\tasks.ps1 test-backend`** (см. [docs/tech/db-tooling-guide.md](docs/tech/db-tooling-guide.md), «Смешанный режим»). Цель **`make db-migrate-test`**: миграции основной БД, при необходимости создание тестовой БД, затем тесты.
 
 **Проверка после запуска:**
 
