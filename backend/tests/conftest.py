@@ -1,3 +1,3 @@
-"""Общие плагины для подкаталогов tests/pg и tests/sqlite."""
+"""Общие плагины для tests/pg."""
 
 pytest_plugins = ["tests.api_fixtures"]

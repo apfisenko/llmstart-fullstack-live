@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import importlib
 import logging
 import os
 from contextlib import asynccontextmanager
@@ -15,7 +14,6 @@ from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, async_sessionmaker
 from app.api.errors import ApiError
 from app.api.v1.router import router as api_v1_router
 from app.config import Settings, get_settings
-from app.domain.base import Base
 from app.infrastructure.database import create_engine_and_session_factory
 from app.infrastructure.llm_assistant import (
     LlmAssistant,
@@ -53,12 +51,6 @@ def create_app(
         level = getattr(logging, level_name.upper(), logging.INFO)
         logging.basicConfig(level=level, format="%(levelname)s %(name)s %(message)s")
 
-        if "sqlite" in resolved_settings.database_url:
-            importlib.import_module("app.domain.models")
-
-            async with eng.begin() as conn:
-                await conn.run_sync(Base.metadata.create_all)
-
         if llm_override is None:
             if resolved_settings.openrouter_api_key:
                 timeout = httpx.Timeout(resolved_settings.openrouter_timeout)
@@ -87,7 +79,6 @@ def create_app(
     application.state.session_factory = sess_factory
     if llm_override is not None:
         application.state.llm = llm_override
-        # ASGI-транспорт в тестах может отработать запрос до lifespan; guest нужен сразу.
         application.state.guest_dialogue = GuestDialogueService(llm_override)
     application.include_router(api_v1_router)
 

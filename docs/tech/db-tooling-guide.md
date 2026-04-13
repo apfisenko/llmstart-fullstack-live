@@ -16,7 +16,7 @@
 DATABASE_URL=postgresql+asyncpg://user:password@127.0.0.1:5432/llmstart
 ```
 
-В [`backend/app/config.py`](../../backend/app/config.py) для разработки без Postgres допустим дефолт SQLite (`sqlite+aiosqlite:///...`). **Alembic** при отсутствии `DATABASE_URL` завершится ошибкой — задайте URL явно перед миграциями.
+В [`backend/app/config.py`](../../backend/app/config.py) используется только **PostgreSQL**; **`DATABASE_URL`** задаётся в **`backend/.env`**. **Alembic** при отсутствии `DATABASE_URL` в окружении завершится ошибкой — задайте URL явно перед миграциями.
 
 Зависимости: для команд Alembic с Postgres установите dev-группу backend (`psycopg2-binary`, **`tzdata`** в `[project.optional-dependencies] dev`). Пакет **`tzdata`** нужен на **Windows**, где стандартная библиотека `zoneinfo` не содержит базу IANA; без него data-миграция с `Europe/Moscow` (ревизия `0003_seed_progress`) падает с `ZoneInfoNotFoundError`.
 
@@ -28,7 +28,7 @@ DATABASE_URL=postgresql+asyncpg://user:password@127.0.0.1:5432/llmstart
 
 Для Alembic и backend на **хосте** в [`DATABASE_URL`](../../backend/.env.example) указывайте `127.0.0.1`. Если backend запускается в контейнере в той же docker-сети, хост СУБД — имя сервиса **`postgres`**.
 
-Нужны Docker Engine и **Compose V2** (`docker compose`). Цель **`make db-up`** вызывает `docker compose up -d --wait` (ожидание healthcheck). Если флаг `--wait` не поддерживается — обновите Docker Desktop / плагин compose либо поднимите контейнер вручную и дождитесь статуса healthy.
+Нужны Docker Engine и **Compose V2** (`docker compose`). Цель **`make db-up`** поднимает Postgres (`docker compose up -d --wait`) и затем накатывает Alembic на **`llmstart`** и **`llmstart_test`** (`db-migrate-all`), чтобы в GUI-клиентах не оказывалась «пустая» тестовая БД без схемы. Если флаг `--wait` не поддерживается — обновите Docker Desktop / плагин compose либо поднимите контейнер вручную и дождитесь статуса healthy.
 
 ### Windows: Docker через WSL
 
@@ -36,7 +36,7 @@ DATABASE_URL=postgresql+asyncpg://user:password@127.0.0.1:5432/llmstart
 
 1. В Docker Desktop: **Settings → Resources → WSL integration** — включите интеграцию для вашего дистрибутива (Ubuntu и т.д.).
 2. Откройте **WSL** (тот же дистрибутив), установите в нём **`make`** и **`uv`**, клонируйте/перейдите в репозиторий по Linux-пути (например `~/projects/...` или `/mnt/c/.../llmstart-fullstack-live`). Рабочий каталог compose и путей к `data/` должен совпадать с тем, откуда вы вызываете `make`.
-3. Для первого подъёма БД и миграций: **`make db-up`**, затем **`make db-migrate`**, либо сразу полный сброс — **`make db-reset`** (см. готовый сценарий ниже для проекта на **`/mnt/c/...`**). Порт `5432` проброшен на localhost — **`DATABASE_URL` с `127.0.0.1`** в `.env` остаётся верным и для процессов в WSL, и для backend на Windows, если он подключается к тому же хосту.
+3. Для первого подъёма БД и миграций: **`make db-up`** (миграции уже входят в цель) или полный сброс — **`make db-reset`** (см. готовый сценарий ниже для проекта на **`/mnt/c/...`**). Отдельно **`make db-migrate`** нужен, если Postgres уже запущен, а схему нужно обновить только на **`llmstart`**. Порт `5432` проброшен на localhost — **`DATABASE_URL` с `127.0.0.1`** в `.env` остаётся верным и для процессов в WSL, и для backend на Windows, если он подключается к тому же хосту.
 
 #### WSL: готовая последовательность для `make db-reset` (проект на `/mnt/c/...`)
 
@@ -122,10 +122,12 @@ make db-up DOCKER_COMPOSE="wsl -e docker compose"
 
 | Цель | Действие |
 |------|----------|
-| `make db-up` | `docker compose up -d --wait` (или `$(DOCKER_COMPOSE) …`) |
+| `make db-up` | `docker compose up -d --wait`, затем **`db-migrate-all`** (нужны **uv** и dev-зависимости backend) |
 | `make db-down` | `docker compose down` (данные в volume по умолчанию сохраняются) |
-| `make db-reset` | `docker compose down -v`, снова `up --wait`, затем миграции до `head` |
-| `make db-migrate` | `cd backend && uv sync --extra dev && uv run alembic upgrade head` |
+| `make db-reset` | `docker compose down -v`, снова `up --wait`, затем **`db-migrate-all`** |
+| `make db-migrate` | только БД **`POSTGRES_DB`** (по умолчанию `llmstart`): `cd backend && … alembic upgrade head` |
+| `make db-migrate-test-db` | только **`POSTGRES_TEST_DB`** (по умолчанию `llmstart_test`): те же миграции |
+| `make db-migrate-all` | `db-migrate`, при необходимости **`db-test-create`**, затем **`db-migrate-test-db`** |
 | `make db-shell` | `psql` внутри контейнера `postgres` |
 | `make migrate-backend` | синоним **`make db-migrate`** |
 
@@ -279,7 +281,7 @@ cd backend && uv run alembic revision --autogenerate -m "описание"
 | Действие | Команда |
 |----------|---------|
 | Применить все ревизии до головы | `uv run alembic upgrade head` |
-| Из корня репозитория (то же + sync) | `make db-migrate` или `make migrate-backend` |
+| Из корня репозитория (то же + sync) | `make db-migrate` / `make migrate-backend`; обе БД — **`make db-migrate-all`** |
 | Текущая ревизия | `uv run alembic current` |
 | История | `uv run alembic history` |
 | Новая пустая ревизия | `uv run alembic revision -m "краткое_описание"` |

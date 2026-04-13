@@ -2,10 +2,6 @@ from __future__ import annotations
 
 import os
 
-# make test-backend / CI: TEST_DATABASE_URL → отдельная БД (*_test), не llmstart.
-if os.environ.get("TEST_DATABASE_URL"):
-    os.environ["DATABASE_URL"] = os.environ["TEST_DATABASE_URL"]
-
 import pytest
 
 from app.config import get_settings
@@ -23,13 +19,16 @@ def _database_name_from_url(url: str) -> str | None:
 
 
 def pytest_configure(config: pytest.Config) -> None:  # noqa: ARG001
+    test_db = os.environ.get("TEST_DATABASE_URL")
+    if test_db:
+        os.environ["DATABASE_URL"] = test_db
+
     get_settings.cache_clear()
     url = get_settings().database_url
     if not url.startswith("postgresql"):
         pytest.exit(
-            "Suite tests/pg requires PostgreSQL. "
-            "Use: make test-backend (or pytest tests/pg). "
-            "For SQLite: make test-backend-sqlite (pytest tests/sqlite).",
+            "Suite tests/pg requires PostgreSQL (DATABASE_URL / TEST_DATABASE_URL). "
+            "Use: make test-backend (or pytest tests/pg).",
             returncode=1,
         )
     dbn = _database_name_from_url(url)

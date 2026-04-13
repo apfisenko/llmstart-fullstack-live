@@ -72,8 +72,8 @@ flowchart LR
 .\tasks.ps1 install
 .\tasks.ps1 lint
 .\tasks.ps1 test-backend
-.\tasks.ps1 db-up
-.\tasks.ps1 db-migrate
+.\tasks.ps1 db-up          # compose + миграции на llmstart и llmstart_test
+# при уже запущенном Postgres только основная БД: .\tasks.ps1 db-migrate
 ```
 
 Если выполнение скриптов запрещено политикой: `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned` (один раз). Переменные **`DOCKER_COMPOSE`**, **`POSTGRES_*`**, **`POSTGRES_TEST_DB`**, **`DATABASE_URL`**, **`TEST_DATABASE_URL`** — те же, что в [Makefile](Makefile).
@@ -88,11 +88,9 @@ flowchart LR
 | `run` | `uv run python -m bot.main` |
 | `lint` | `uv run ruff check bot` и `uv run ruff format --check bot`; затем в `backend\`: `uv run ruff check app tests` и `uv run ruff format --check app tests` |
 | `format` | `uv run ruff format bot` и `uv run ruff check --fix bot`; затем в `backend\`: `uv run ruff format app tests` и `uv run ruff check --fix app tests` |
-| `test` / `test-backend` | в `backend\`: `uv sync --extra dev`, `uv run pytest tests/pg` (Postgres `*_test`; `tasks.ps1` выставляет `TEST_DATABASE_URL`) |
-| `test-backend-sqlite` | в `backend\`: `uv sync --extra dev`, `uv run pytest tests/sqlite` (SQLite, без Postgres) |
-| `test-all` | `test-backend`, затем `test-backend-sqlite` |
-| `migrate-backend` | в `backend\`: `uv sync --extra dev`, затем `uv run alembic upgrade head` |
-| `db-migrate-test` | `db-migrate`, `db-test-create`, `test-backend` (pytest на **`TEST_DATABASE_URL`** → обычно `llmstart_test`). |
+| `test` / `test-backend` / `test-all` | в `backend\`: `uv sync --extra dev`, `uv run pytest tests/pg` (Postgres `*_test`; `tasks.ps1` выставляет `TEST_DATABASE_URL`) |
+| `migrate-backend` | в `backend\`: `uv sync --extra dev`, затем `uv run alembic upgrade head` (только **`POSTGRES_DB`**) |
+| `db-migrate-test` | `db-migrate-all`, затем `test-backend` (pytest на **`TEST_DATABASE_URL`** → обычно `llmstart_test`). |
 
 В **cmd** одной строкой для backend (как в Makefile): `cd backend && uv sync --extra dev && uv run pytest` и `cd backend && uv sync --extra dev && uv run alembic upgrade head`. В **PowerShell 5.1** надёжнее три отдельные строки (`cd backend`, `uv sync ...`, `uv run ...`); в **PowerShell 7+** допустим оператор `&&`.
 
@@ -100,9 +98,9 @@ flowchart LR
 
 ### Backend API
 
-Нужен файл окружения (зависимости — через `make install` или `uv sync` в `backend/`). Конфиг backend ([`backend/app/config.py`](backend/app/config.py)) подхватывает `.env` относительно каталога запуска: обычно `backend/.env` и корневой `.env` (см. `env_file` в `Settings`).
+Нужен файл окружения (зависимости — через `make install` или `uv sync` в `backend/`). Конфиг backend ([`backend/app/config.py`](backend/app/config.py)) читает **`backend/.env`** (`env_file=".env"` при запуске из каталога `backend/`). Строка **`DATABASE_URL`** (PostgreSQL) задаётся только там.
 
-1. Шаблон процесса backend — [`backend/.env.example`](backend/.env.example) (`backend/.env` или объединить с корневым `.env`). Шаблон бота — корневой [`.env.example`](.env.example); при одном `.env` в корне допишите в него строки из `backend/.env.example`.
+1. Шаблон backend — [`backend/.env.example`](backend/.env.example) → **`backend/.env`**. Бот — корневой [`.env.example`](.env.example) → **`.env`** в корне репозитория; конфиг бота подгружается **только** оттуда (не из `backend/.env`).
 2. Установить зависимости и запустить сервер из каталога `backend/`:
 
 ```bash
@@ -115,7 +113,7 @@ uv run uvicorn app.main:app --host 127.0.0.1 --port 8000
 
 Для **тестов** и **миграций Alembic** нужен dev-набор: `uv sync --extra dev`.
 
-**База данных:** если `DATABASE_URL` не задан или пустой, используется **SQLite** (`./llmstart_local.sqlite` в текущем каталоге процесса); схема для SQLite создаётся при старте приложения, **отдельный шаг миграций не нужен**. Для **PostgreSQL** задайте `DATABASE_URL` (`postgresql+asyncpg://...`) и из **корня** репозитория выполните **`make migrate-backend`** (внутри: `cd backend && uv sync --extra dev && uv run alembic upgrade head`). На Windows без make — строка **`migrate-backend`** в [таблице выше](#windows-no-make).
+**База данных:** только **PostgreSQL**. В **`backend/.env`** задайте **`DATABASE_URL`** (`postgresql+asyncpg://...`). Схема — через **Alembic**: из **корня** репозитория **`make migrate-backend`** (внутри: `cd backend && uv sync --extra dev && uv run alembic upgrade head`). На Windows без make — **`.\tasks.ps1 db-migrate`** или строка **`migrate-backend`** в [таблице выше](#windows-no-make).
 
 На **Windows**, если **Docker** только в **WSL**, поднимайте Postgres из WSL, **Alembic** — с `DATABASE_URL` на `127.0.0.1:5432`, **pytest** — с **`TEST_DATABASE_URL`** на БД `*_test` (например `llmstart_test`): это делает **`make test-backend`** / **`.\tasks.ps1 test-backend`** (см. [docs/tech/db-tooling-guide.md](docs/tech/db-tooling-guide.md), «Смешанный режим»). Цель **`make db-migrate-test`**: миграции основной БД, при необходимости создание тестовой БД, затем тесты.
 
@@ -133,7 +131,7 @@ uv run uvicorn app.main:app --host 127.0.0.1 --port 8000
 
 Бот ходит только в **backend API** (LLM на стороне ядра). **Запуск** достаточно с `TELEGRAM_TOKEN` и поднятым backend. **`COHORT_ID` и `MEMBERSHIP_ID` не обязательны:** в этом случае используется **guest-режим** (`POST /api/v1/assistant/guest/*`) — диалог в памяти процесса backend, без строк в БД; сценарий позже можно сменить на поток/membership. Если оба UUID заданы и данные есть в БД, запросы идут в основной контракт `.../cohorts/{id}/dialogues/messages` с персистентностью.
 
-**Локально (SQLite):** после первого старта backend файл `llmstart_local.sqlite` появится в каталоге, из которого вы запускали uvicorn (часто `backend/`). Вставьте демо-строки (подставьте свои UUID в `.env` или оставьте эти и скопируйте в `COHORT_ID` / `MEMBERSHIP_ID`):
+**Локально (PostgreSQL):** после **`make db-up`** и **`make migrate-backend`** выполните демо-вставки в БД (например **`make db-shell`** или клиент к `DATABASE_URL`). Подставьте свои UUID в `.env` или оставьте эти и скопируйте в `COHORT_ID` / `MEMBERSHIP_ID`:
 
 ```sql
 INSERT INTO users (id, telegram_user_id, name)

@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from functools import lru_cache
 from typing import Optional
 
@@ -6,19 +8,18 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
+    """Настройки читаются из `backend/.env` (cwd процесса — каталог backend)."""
+
     model_config = SettingsConfigDict(
-        env_file=(".env", "../.env"),
+        env_file=".env",
         env_file_encoding="utf-8",
         extra="ignore",
     )
 
     database_url: str = Field(
-        default="sqlite+aiosqlite:///./llmstart_local.sqlite",
+        ...,
         validation_alias="DATABASE_URL",
-        description=(
-            "Async SQLAlchemy URL. По умолчанию — SQLite в cwd (локалка без Postgres). "
-            "Для прод — postgresql+asyncpg://..."
-        ),
+        description="Async PostgreSQL URL (postgresql+asyncpg://...). Только в backend/.env.",
     )
 
     host: str = Field(default="127.0.0.1", validation_alias="BACKEND_HOST")
@@ -53,6 +54,16 @@ class Settings(BaseSettings):
     )
     proxy_url: str = Field(default="", validation_alias="PROXY_URL")
 
+    @field_validator("database_url", mode="before")
+    @classmethod
+    def require_postgres_database_url(cls, value: object) -> object:
+        if value == "" or value is None:
+            raise ValueError("DATABASE_URL обязателен: postgresql+asyncpg://...")
+        s = str(value)
+        if not s.startswith("postgresql"):
+            raise ValueError("Поддерживается только PostgreSQL (postgresql+asyncpg://...).")
+        return value
+
     @field_validator("openrouter_api_key", mode="before")
     @classmethod
     def empty_openrouter_key_as_none(cls, value: object) -> object:
@@ -65,13 +76,6 @@ class Settings(BaseSettings):
     def empty_api_client_token_as_none(cls, value: object) -> object:
         if value == "":
             return None
-        return value
-
-    @field_validator("database_url", mode="before")
-    @classmethod
-    def empty_database_url_use_default(cls, value: object) -> object:
-        if value == "":
-            return "sqlite+aiosqlite:///./llmstart_local.sqlite"
         return value
 
 

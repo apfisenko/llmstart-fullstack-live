@@ -20,7 +20,7 @@ target_metadata = Base.metadata
 def _sync_database_url() -> str:
     raw = os.environ.get("DATABASE_URL", "")
     if not raw:
-        raise RuntimeError("DATABASE_URL is required for Alembic migrations")
+        raise RuntimeError("Для Alembic задайте DATABASE_URL (postgresql+asyncpg://...) в окружении.")
     if "+asyncpg" in raw:
         return raw.replace("+asyncpg", "+psycopg2", 1)
     return raw

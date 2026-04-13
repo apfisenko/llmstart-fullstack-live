@@ -5,7 +5,6 @@ from __future__ import annotations
 import pytest_asyncio
 from httpx import ASGITransport, AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
-from sqlalchemy.pool import StaticPool
 
 from app.config import get_settings
 from app.domain import models  # noqa: F401
@@ -36,24 +35,12 @@ from tests.constants import (
 )
 
 
-def _async_engine_kwargs(database_url: str) -> dict:
-    if database_url.startswith("sqlite"):
-        return {
-            "poolclass": StaticPool,
-            "connect_args": {"check_same_thread": False},
-        }
-    return {}
-
-
 @pytest_asyncio.fixture
 async def engine():
     get_settings.cache_clear()
     settings = get_settings()
     url = settings.database_url
-    eng = create_async_engine(
-        url,
-        **_async_engine_kwargs(url),
-    )
+    eng = create_async_engine(url)
     async with eng.begin() as conn:
         await conn.run_sync(Base.metadata.drop_all)
         await conn.run_sync(Base.metadata.create_all)

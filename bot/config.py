@@ -12,17 +12,8 @@ _REPO_ROOT = Path(__file__).resolve().parents[1]
 
 
 def _env_files_for_bot() -> tuple[str, ...]:
-    """Порядок: сначала backend/.env, затем корневой .env — дубликаты перекрывает корень."""
-    paths: list[str] = []
-    backend_env = _REPO_ROOT / "backend" / ".env"
-    root_env = _REPO_ROOT / ".env"
-    if backend_env.is_file():
-        paths.append(str(backend_env))
-    if root_env.is_file():
-        paths.append(str(root_env))
-    if not paths:
-        paths.append(str(root_env))
-    return tuple(paths)
+    """Переменные бота — только из корневого `.env` репозитория (`./.env`)."""
+    return (str(_REPO_ROOT / ".env"),)
 
 
 class Config(BaseSettings):
@@ -39,8 +30,8 @@ class Config(BaseSettings):
     def telegram_token_non_empty(cls, value: Any) -> Any:
         if isinstance(value, str) and not value.strip():
             raise ValueError(
-                "TELEGRAM_TOKEN пустой: задайте токен в корневом .env или backend/.env "
-                f"(ожидаемый каталог репозитория: {_REPO_ROOT})."
+                "TELEGRAM_TOKEN пустой: задайте токен в корневом .env репозитория "
+                f"({_REPO_ROOT / '.env'})."
             )
         return value
 

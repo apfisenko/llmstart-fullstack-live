@@ -52,7 +52,7 @@ flowchart TB
 
 **Аутентификация клиентов:** в [`docs/api/openapi-v1.yaml`](api/openapi-v1.yaml) зафиксирована схема `bearerAuth`. Опционально `BACKEND_API_CLIENT_TOKEN` в `Settings`: если задан, для `/api/v1/*` требуется `Authorization: Bearer` с этим значением (см. [`backend/.env.example`](../backend/.env.example)).
 
-**Секреты (только окружение, не репозиторий):** `TELEGRAM_TOKEN` — бот; `OPENROUTER_API_KEY` — вызовы LLM **только из backend**; опционально `BACKEND_API_CLIENT_TOKEN` — доступ клиентов к `/api/v1/*` (значение должно совпадать с настройкой backend). Шаблоны: корневой [`.env.example`](../.env.example) — переменные бота; [`backend/.env.example`](../backend/.env.example) — процесс backend; при одном `.env` в корне объединяют оба файла.
+**Секреты (только окружение, не репозиторий):** `TELEGRAM_TOKEN` и остальные переменные бота — **только** в корневом `.env` (читает `bot/config.py`). `OPENROUTER_API_KEY` и LLM — **только** в `backend/.env`. Опционально `BACKEND_API_CLIENT_TOKEN` задаётся в **обоих** местах с **одинаковым** значением (backend проверяет Bearer, бот его отправляет). Шаблоны: [`.env.example`](../.env.example) — бот; [`backend/.env.example`](../backend/.env.example) — backend.
 
 ---
 
@@ -60,7 +60,7 @@ flowchart TB
 
 **Текущее состояние:** процесс `backend/` вызывает OpenRouter (или иной OpenAI-совместимый endpoint) из [`backend/app/infrastructure/llm_assistant.py`](../backend/app/infrastructure/llm_assistant.py), если задан `OPENROUTER_API_KEY`; иначе в тестах и на локалке без ключа используется заглушка ответа. Telegram-бот (`bot/`) — **тонкий клиент**: HTTP к `/api/v1/` (см. задача **07** в [tasklist-backend](tasks/tasklist-backend.md)); прямого вызова LLM из бота нет.
 
-**Персистентность:** целевая СУБД — **PostgreSQL** ([`adr/adr-001-database.md`](adr/adr-001-database.md)). Локально по умолчанию может использоваться **SQLite**, если `DATABASE_URL` пустой или не задан (`Settings` в backend). Для PostgreSQL задайте `DATABASE_URL` (async, `postgresql+asyncpg://...`) — см. [`backend/.env.example`](../backend/.env.example). Миграции Alembic: из корня репозитория `make migrate-backend` или `cd backend && uv run alembic upgrade head` (нужен dev extra с `psycopg2` для Alembic).
+**Персистентность:** только **PostgreSQL** ([`adr/adr-001-database.md`](adr/adr-001-database.md)). В **`backend/.env`** задайте **`DATABASE_URL`** (async, `postgresql+asyncpg://...`) — см. [`backend/.env.example`](../backend/.env.example). Миграции Alembic: из корня репозитория `make migrate-backend` или `cd backend && uv run alembic upgrade head` (нужен dev extra с `psycopg2` для Alembic).
 
 **Конфигурация LLM на стороне backend:** `OPENROUTER_API_KEY`, `OPENROUTER_BASE_URL`, `OPENROUTER_MODEL`, `OPENROUTER_TIMEOUT`, `SYSTEM_PROMPT_PATH`, опционально `PROXY_URL` — в `Settings` и в [`backend/.env.example`](../backend/.env.example).
 

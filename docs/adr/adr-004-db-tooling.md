@@ -70,7 +70,6 @@
 | СУБД | PostgreSQL | не фиксируется в репозитории (см. [ADR-001](adr-001-database.md)) |
 | ORM (async API) | SQLAlchemy | >=2.0.36 |
 | Драйвер БД (runtime, Postgres) | asyncpg | >=0.30 |
-| Драйвер БД (runtime, локально без Postgres) | aiosqlite | >=0.20 |
 | Миграции схемы | Alembic | >=1.14 |
 | Драйвер БД (миграции, синхронный Postgres) | psycopg2-binary | >=2.9; optional `dev` |
 | Конфигурация URL и окружения | pydantic-settings | >=2.6 |

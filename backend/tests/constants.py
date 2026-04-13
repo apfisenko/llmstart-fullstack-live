@@ -1,4 +1,4 @@
-"""Общие константы для API-тестов (tests/pg, tests/sqlite, api_fixtures)."""
+"""Общие константы для API-тестов (tests/pg, api_fixtures)."""
 
 import uuid
 
