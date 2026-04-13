@@ -6,8 +6,9 @@
 .DESCRIPTION
   Run from repo root: .\tasks.ps1 install | db-up | db-migrate | test-backend ...
 
-  If docker is only in WSL:
-    $env:DOCKER_COMPOSE = "wsl -e docker compose"; .\tasks.ps1 db-up
+  Если в PowerShell нет `docker` в PATH, скрипт сам использует `wsl -e docker compose`
+  (Docker только внутри WSL). Иначе можно задать вручную:
+    $env:DOCKER_COMPOSE = "wsl -d Ubuntu -e docker compose"; .\tasks.ps1 db-up
 
   Env vars (same as Makefile): POSTGRES_*, DATABASE_URL, TEST_DATABASE_URL, DOCKER_COMPOSE.
 #>
@@ -31,9 +32,26 @@ $pgTestDefault = "postgresql+asyncpg://$($env:POSTGRES_USER):$($env:POSTGRES_PAS
 if (-not $env:DATABASE_URL) { $env:DATABASE_URL = $pgUrlDefault }
 if (-not $env:TEST_DATABASE_URL) { $env:TEST_DATABASE_URL = $pgTestDefault }
 
+function Get-DockerComposeCommandPrefix {
+    $explicit = $env:DOCKER_COMPOSE
+    if ($explicit -and $explicit.Trim()) {
+        return $explicit.Trim()
+    }
+    if (Get-Command docker -ErrorAction SilentlyContinue) {
+        return "docker compose"
+    }
+    if (Get-Command wsl -ErrorAction SilentlyContinue) {
+        return "wsl -e docker compose"
+    }
+    throw (
+        "docker not in PATH and wsl not found. Install Docker+WSL2 or set DOCKER_COMPOSE. " +
+        'Example: $env:DOCKER_COMPOSE = "wsl -e docker compose"; .\tasks.ps1 db-up'
+    )
+}
+
 function Invoke-DockerCompose {
     param([string[]] $ArgumentList)
-    $prefix = if ($env:DOCKER_COMPOSE) { $env:DOCKER_COMPOSE.Trim() } else { "docker compose" }
+    $prefix = Get-DockerComposeCommandPrefix
     $head = $prefix -split "\s+"
     if ($head.Count -eq 0) { throw "DOCKER_COMPOSE is empty" }
     $exe = $head[0]
@@ -128,7 +146,7 @@ function Task-TestBackend {
 
 function Task-DbTestCreate {
     $db = $env:POSTGRES_TEST_DB
-    $prefix = if ($env:DOCKER_COMPOSE) { $env:DOCKER_COMPOSE.Trim() } else { "docker compose" }
+    $prefix = Get-DockerComposeCommandPrefix
     $head = $prefix -split "\s+"
     $exe = $head[0]
     $rest = @()
@@ -245,8 +263,8 @@ Usage: .\tasks.ps1 <target>
 
 Env: DOCKER_COMPOSE, POSTGRES_*, POSTGRES_TEST_DB, DATABASE_URL, TEST_DATABASE_URL (see Makefile).
 
-Docker via WSL only:
-  `$env:DOCKER_COMPOSE = 'wsl -e docker compose'; .\tasks.ps1 db-up
+Docker только в WSL: если `docker` не в PATH Windows, скрипт вызывает `wsl -e docker compose`.
+Свой дистрибутив: `$env:DOCKER_COMPOSE = 'wsl -d Ubuntu -e docker compose'`
 "@
 }
 
