@@ -3,13 +3,16 @@
         {
             "ssh": "Disabled",
             "previewLimit": 50,
-            "server": "localhost",
+            "server": "127.0.0.1",
             "port": 5432,
             "driver": "PostgreSQL",
             "name": "llmstart",
             "database": "llmstart",
             "username": "llmstart",
-            "password": "llmstart"
+            "password": "llmstart",
+            "pgOptions": {
+                "ssl": false
+            }
         }
     ]
 }

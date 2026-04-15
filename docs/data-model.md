@@ -40,10 +40,13 @@
 
 Учётка в системе: вход с веба, привязка Telegram и т.д.
 
+**Решение для MVP веб-входа (задача frontend 01):** идентификация по строке Telegram username закрепляется **колонкой `telegram_username` в таблице `users`** (и в логической модели `User`). Отдельная «временная таблица / маппинг только в сиде» как единственный источник соответствия username → пользователь **не используется** — сид лишь заполняет ту же колонку вместе с остальными данными.
+
 | Поле (понятие) | Назначение | Типы (ориентир) |
 |----------------|------------|-----------------|
 | идентификатор | суррогатный ключ | UUID |
 | имя | отображаемое имя в интерфейсе | строка, nullable |
+| Telegram username | вход веб-клиента MVP по `@username` без OAuth; нормализация без `@`, регистр — в приложении | `citext` или `text`, nullable, уникально среди ненулевых |
 | Telegram user id | импорт и матчинг бота | целое 64-bit, nullable, уникально среди ненулевых |
 | прочие внешние идентификаторы | email/login — по мере необходимости | строка, nullable |
 | роль по умолчанию | глобальная подсказка (опционально) | перечисление |
@@ -130,7 +133,7 @@
 | обязательность | опционально | boolean |
 | **признак ДЗ** | участие этапа в лидерборде по домашкам | boolean |
 
-*Поле «признак ДЗ» в OpenAPI v1 в `ProgressCheckpointItem` пока не отражено — при появлении в API добавить поле в схему ответа; в БД колонка нужна для запросов лидерборда.*
+*Поле «признак ДЗ» отражено в OpenAPI v1 в `ProgressCheckpointItem` как `is_homework` (задача frontend 01); в БД колонка `is_homework` уже в схеме ниже.*
 
 ---
 
@@ -145,7 +148,8 @@
 | этап | ссылка на `ProgressCheckpoint` | UUID (FK) |
 | статус | см. API | перечисление |
 | обновлено | когда изменилась отметка | `timestamptz` |
-| комментарий | краткая заметка | строка, nullable |
+| комментарий | краткая заметка (текст отчёта студента) | строка, nullable |
+| ссылки на работы | отдельно от комментария; список URL из формы сдачи | JSONB массив строк или `text[]`, nullable |
 
 *Уникальность: одна актуальная запись на пару (участие, этап).*
 
@@ -196,6 +200,7 @@ erDiagram
 |---------|-----|-------------|
 | `id` | `uuid` | PK, default `gen_random_uuid()` |
 | `display_name` | `text` | nullable |
+| `telegram_username` | `text` | nullable; уникальность среди ненулевых — частичный уникальный индекс; миграция — задача frontend 02 |
 | `telegram_id` | `bigint` | nullable; уникальность среди ненулевых — частичный уникальный индекс |
 | `created_at` | `timestamptz` | NOT NULL, default `now()` |
 | `updated_at` | `timestamptz` | NOT NULL, default `now()` |
@@ -246,6 +251,7 @@ UNIQUE (`cohort_id`, `code`). Индекс (`cohort_id`, `sort_order`).
 | `progress_checkpoint_id` | `uuid` | NOT NULL, FK → `progress_checkpoints(id)` ON DELETE RESTRICT |
 | `status` | `progress_status` | NOT NULL |
 | `comment` | `text` | nullable |
+| `submission_links` | `jsonb` | nullable; массив строк (URL); миграция — задача frontend 02 |
 | `updated_at` | `timestamptz` | NOT NULL, default `now()` |
 
 UNIQUE (`cohort_membership_id`, `progress_checkpoint_id`). Индекс `progress_checkpoint_id` (сводки по группе).

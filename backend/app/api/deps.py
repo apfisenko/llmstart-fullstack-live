@@ -9,6 +9,8 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from app.api.errors import ApiError
 from app.config import Settings, get_settings
+from app.services.auth_service import AuthService
+from app.services.cohort_analytics_service import CohortAnalyticsService
 from app.services.cohort_service import CohortService
 from app.services.dialogue_service import DialogueService
 from app.services.guest_dialogue_service import GuestDialogueService
@@ -61,10 +63,20 @@ def get_cohort_service(session: SessionDep) -> CohortService:
     return CohortService(session)
 
 
+def get_auth_service(session: SessionDep) -> AuthService:
+    return AuthService(session)
+
+
+def get_cohort_analytics_service(session: SessionDep) -> CohortAnalyticsService:
+    return CohortAnalyticsService(session)
+
+
 def get_guest_dialogue_service(request: Request) -> GuestDialogueService:
     return request.app.state.guest_dialogue
 
 
 DialogueServiceDep = Annotated[DialogueService, Depends(get_dialogue_service)]
 CohortServiceDep = Annotated[CohortService, Depends(get_cohort_service)]
+AuthServiceDep = Annotated[AuthService, Depends(get_auth_service)]
+CohortAnalyticsServiceDep = Annotated[CohortAnalyticsService, Depends(get_cohort_analytics_service)]
 GuestDialogueServiceDep = Annotated[GuestDialogueService, Depends(get_guest_dialogue_service)]

@@ -18,6 +18,7 @@ from sqlalchemy import (
     func,
 )
 from sqlalchemy import Enum as SAEnum
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.domain.base import Base
@@ -55,6 +56,7 @@ class User(Base):
 
     id: Mapped[uuid.UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=uuid.uuid4)
     telegram_user_id: Mapped[Optional[str]] = mapped_column(String(64), nullable=True)
+    telegram_username: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
     name: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(
@@ -186,6 +188,7 @@ class ProgressCheckpoint(Base):
     title: Mapped[str] = mapped_column(String(512), nullable=False)
     sort_order: Mapped[int] = mapped_column(nullable=False)
     required: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    is_homework: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
 
     cohort: Mapped[Cohort] = relationship(back_populates="checkpoints")
     records: Mapped[list[ProgressRecord]] = relationship(back_populates="checkpoint")
@@ -217,6 +220,7 @@ class ProgressRecord(Base):
         nullable=False,
     )
     comment: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    submission_links: Mapped[Optional[list]] = mapped_column(JSONB, nullable=True)
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
     )

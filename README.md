@@ -76,6 +76,22 @@ flowchart LR
 # при уже запущенном Postgres только основная БД: .\tasks.ps1 db-migrate
 ```
 
+После полного `alembic upgrade head` ревизия **`0007`** (если ещё не применена) создаёт демо-поток с `cohorts.code = demo_frontend_mvp`: преподаватель **`telegram_username` akozhin**, **`telegram_user_id` 162684825**, студенты `demo_student_alpha` / `beta` / `gamma`, чекпоинты (в т.ч. ДЗ), прогресс и реплики в диалогах для KPI и веб-экранов.
+
+**Вход преподавателя (MVP, веб / ручная проверка API):**
+
+1. Поднимите PostgreSQL и накатите миграции (**`.\tasks.ps1 db-up`** или **`make db-up`**), затем запустите backend из **`backend/`** (см. раздел [Backend API](#backend-api) ниже).
+2. Вызовите **`POST /api/v1/auth/dev-session`** с телом **`{"telegram_username": "akozhin"}`** (допустимо и **`@akozhin`** — сервер приводит имя к одному виду). Базовый URL, например: `http://127.0.0.1:8000`.
+3. Если в **`backend/.env`** задан **`BACKEND_API_CLIENT_TOKEN`**, к запросу добавьте заголовок **`Authorization: Bearer <тот же токен>`**.
+4. В ответе используйте участие с **`role`: `teacher`**: его **`membership_id`** передавайте как **`viewer_membership_id`** в **`GET /api/v1/cohorts/{cohort_id}/teacher-dashboard`** и **`GET .../summary`**. **`cohort_id`** возьмите из того же элемента `memberships` (или из таблицы для быстрых ручных вызовов ниже).
+
+| Для ручных вызовов | UUID |
+|--------------------|------|
+| Демо-когорта `demo_frontend_mvp` | `f1eef000-0000-4000-8000-000000000001` |
+| Участие преподавателя (teacher) | `f1eef000-0000-4000-8000-000000000011` |
+
+Подробнее по контракту: [`docs/tech/api-contracts.md`](docs/tech/api-contracts.md), интерактивно — **`/docs`** на запущенном backend.
+
 Если выполнение скриптов запрещено политикой: `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned` (один раз). Переменные **`DOCKER_COMPOSE`**, **`POSTGRES_*`**, **`POSTGRES_TEST_DB`**, **`DATABASE_URL`**, **`TEST_DATABASE_URL`** — те же, что в [Makefile](Makefile).
 
 #### Команды вручную
@@ -116,6 +132,8 @@ uv run uvicorn app.main:app --host 127.0.0.1 --port 8000
 **База данных:** только **PostgreSQL**. В **`backend/.env`** задайте **`DATABASE_URL`** (`postgresql+asyncpg://...`). Схема — через **Alembic**: из **корня** репозитория **`make migrate-backend`** (внутри: `cd backend && uv sync --extra dev && uv run alembic upgrade head`). На Windows без make — **`.\tasks.ps1 db-migrate`** или строка **`migrate-backend`** в [таблице выше](#windows-no-make).
 
 На **Windows**, если **Docker** только в **WSL**, поднимайте Postgres из WSL, **Alembic** — с `DATABASE_URL` на `127.0.0.1:5432`, **pytest** — с **`TEST_DATABASE_URL`** на БД `*_test` (например `llmstart_test`): это делает **`make test-backend`** / **`.\tasks.ps1 test-backend`** (см. [docs/tech/db-tooling-guide.md](docs/tech/db-tooling-guide.md), «Смешанный режим»). Цель **`make db-migrate-test`**: миграции основной БД, при необходимости создание тестовой БД, затем тесты.
+
+**`connection refused` / `10061` на `127.0.0.1:5432`:** на этом порту никто не слушает — чаще всего **не запущен** контейнер Postgres. Из корня репозитория выполните **`.\tasks.ps1 db-up`** (или **`make db-up`**), дождитесь healthy. Команда **`.\tasks.ps1 backend-dev`** перед uvicorn **ждёт порт 5432** (25 с) и выведет подсказку, если БД недоступна; для удалённой БД задайте **`LLMSTART_SKIP_POSTGRES_WAIT=1`**. Убедитесь, что **Docker Desktop** запущен и в **`backend/.env`** **`DATABASE_URL`** указывает на тот же хост и порт, что пробросил compose (по умолчанию `postgresql+asyncpg://llmstart:llmstart@127.0.0.1:5432/llmstart`).
 
 **Проверка после запуска:**
 

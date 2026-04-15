@@ -50,6 +50,8 @@ flowchart TB
 
 Политика ошибок, идентификация на MVP и соответствие доменной модели — в [task-02-contracts/plan.md](tasks/impl/backend/iteration-2-backend-api/tasks/task-02-contracts/plan.md) и в [`docs/tech/api-contracts.md`](tech/api-contracts.md). Дублировать полный список полей здесь не требуется.
 
+**Веб-клиент (итерация 4, MVP вход):** после `POST /api/v1/auth/dev-session` с телом `telegram_username` браузер сохраняет у себя контекст выбранного участия (`membership_id`, `cohort_id`, роль, при необходимости `web_dialogue_id`) — например `localStorage` — и подставляет их в запросы с общим `Authorization: Bearer` (как у бота). Подробности и таблица экран → API — в [`docs/tech/api-contracts.md`](tech/api-contracts.md).
+
 **Аутентификация клиентов:** в [`docs/api/openapi-v1.yaml`](api/openapi-v1.yaml) зафиксирована схема `bearerAuth`. Опционально `BACKEND_API_CLIENT_TOKEN` в `Settings`: если задан, для `/api/v1/*` требуется `Authorization: Bearer` с этим значением (см. [`backend/.env.example`](../backend/.env.example)).
 
 **Секреты (только окружение, не репозиторий):** `TELEGRAM_TOKEN` и остальные переменные бота — **только** в корневом `.env` (читает `bot/config.py`). `OPENROUTER_API_KEY` и LLM — **только** в `backend/.env`. Опционально `BACKEND_API_CLIENT_TOKEN` задаётся в **обоих** местах с **одинаковым** значением (backend проверяет Bearer, бот его отправляет). Шаблоны: [`.env.example`](../.env.example) — бот; [`backend/.env.example`](../backend/.env.example) — backend.

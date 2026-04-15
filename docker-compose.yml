@@ -2,6 +2,18 @@ services:
   postgres:
     image: postgres:16-alpine
     container_name: llmstart-postgres
+    # /dev/shm в контейнере по умолчанию ~64MB — Postgres часто падает (FATAL shared memory) и уходит в restart loop.
+    shm_size: "512m"
+    restart: unless-stopped
+    # Явные лимиты для dev: меньше shared memory / соединений → стабильнее на Docker Desktop + WSL2.
+    command:
+      - postgres
+      - -c
+      - shared_buffers=96MB
+      - -c
+      - max_connections=50
+      - -c
+      - max_wal_size=256MB
     environment:
       POSTGRES_USER: llmstart
       POSTGRES_PASSWORD: llmstart
@@ -16,7 +28,7 @@ services:
       interval: 5s
       timeout: 5s
       retries: 10
-      start_period: 5s
+      start_period: 30s
 
 volumes:
   llmstart_pg_data:

@@ -2,7 +2,7 @@
 	backend-test backend-dev \
 	backend-lint backend-typecheck \
 	db-up db-down db-reset db-migrate db-migrate-test-db db-migrate-all \
-	db-test-create db-migrate-test db-shell migrate-backend migrate-backend-test
+	db-test-create db-migrate-test db-shell db-status migrate-backend migrate-backend-test
 
 # Команда Compose: по умолчанию локальный `docker compose`.
 # Если Docker доступен только в WSL (в PowerShell/CMD `docker` не находится), задайте, например:
@@ -54,6 +54,7 @@ db-test-create:
 
 backend-test: test-backend
 
+# Нужен PostgreSQL на DATABASE_URL (локально: сначала make db-up). На Windows см. tasks.ps1 backend-dev — проверка порта 5432.
 backend-dev:
 	cd backend && uv sync && uv run uvicorn app.main:app --reload
 
@@ -89,6 +90,7 @@ db-migrate-test-db:
 	uv run --no-env-file alembic upgrade head
 
 # Основная БД + при необходимости создание llmstart_test + миграции на тестовую БД (нужен запущенный compose).
+# Ревизия Alembic 0007 добавляет демо-когорту `demo_frontend_mvp` (преподаватель akozhin, telegram_user_id 162684825).
 db-migrate-all: db-migrate db-test-create db-migrate-test-db
 
 migrate-backend: db-migrate
@@ -101,3 +103,7 @@ migrate-backend-test: db-migrate-test
 db-shell:
 	$(DOCKER_COMPOSE) exec -e PGPASSWORD=$(POSTGRES_PASSWORD) postgres \
 		psql -U $(POSTGRES_USER) -d $(POSTGRES_DB)
+
+db-status:
+	$(DOCKER_COMPOSE) ps -a
+	@echo "--- Проверьте, что у сервиса postgres в PORTS есть 0.0.0.0:5432->5432/tcp"

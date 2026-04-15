@@ -13,6 +13,8 @@ servers:
     description: Локальная разработка
 
 tags:
+  - name: auth
+    description: Идентификация веб-клиента (MVP)
   - name: dialogues
     description: Диалог с ассистентом (LLM на стороне backend)
   - name: progress
@@ -21,6 +23,37 @@ tags:
     description: Поток и агрегированный обзор
 
 paths:
+  /api/v1/auth/dev-session:
+    post:
+      tags: [auth]
+      summary: Вход веб-клиента по Telegram username (MVP)
+      description: |
+        Находит пользователя по колонке `users.telegram_username` (нормализация на сервере) и возвращает участия в потоках.
+        Не выдаёт JWT: при общем Bearer-клиента веб сохраняет `membership_id` / `cohort_id` и передаёт их в последующих запросах.
+        Реализовано в backend (итерация frontend 02). Источник истины по полю — `docs/data-model.md` (сущность User).
+      operationId: postAuthDevSession
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PostAuthDevSessionRequest"
+      responses:
+        "200":
+          description: Контекст пользователя
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PostAuthDevSessionResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "422":
+          $ref: "#/components/responses/UnprocessableEntity"
+
   /api/v1/cohorts/{cohort_id}/dialogues/messages:
     post:
       tags: [dialogues]
@@ -170,6 +203,116 @@ paths:
         "404":
           $ref: "#/components/responses/NotFound"
 
+  /api/v1/cohorts/{cohort_id}/teacher-dashboard:
+    get:
+      tags: [cohorts]
+      summary: Панель преподавателя (агрегат по потоку)
+      description: |
+        KPI с дельтой к предыдущей календарной неделе, ряд вопросов к ассистенту по дням, ленты Q&A и сдач, матрица прогресса.
+        Реализовано в backend.
+      operationId: getCohortTeacherDashboard
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/CohortId"
+        - $ref: "#/components/parameters/ViewerMembershipId"
+        - $ref: "#/components/parameters/ActivityDays"
+        - $ref: "#/components/parameters/TurnsCursor"
+        - $ref: "#/components/parameters/TurnsLimit"
+        - $ref: "#/components/parameters/TurnsSearchQ"
+      responses:
+        "200":
+          description: Данные дашборда
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TeacherDashboardResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /api/v1/cohorts/{cohort_id}/leaderboard:
+    get:
+      tags: [cohorts]
+      summary: Лидерборд потока (таблица и scatter)
+      description: |
+        Упорядоченный рейтинг и поля для осей scatter (уроки vs домашки). Реализовано в backend.
+      operationId: getCohortLeaderboard
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/CohortId"
+        - $ref: "#/components/parameters/ViewerMembershipIdOptional"
+      responses:
+        "200":
+          description: Лидерборд
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LeaderboardResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /api/v1/cohorts/{cohort_id}/memberships/{membership_id}/progress-overview:
+    get:
+      tags: [progress]
+      summary: Кабинет студента — чекпоинты и свои записи прогресса
+      description: |
+        Участие должно принадлежать `cohort_id`; роль — student (MVP с общим Bearer).
+      operationId: getMembershipProgressOverview
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/CohortId"
+        - $ref: "#/components/parameters/MembershipId"
+      responses:
+        "200":
+          description: Обзор прогресса
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StudentProgressOverviewResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /api/v1/dialogues/{dialogue_id}/turns:
+    get:
+      tags: [dialogues]
+      summary: История ходов диалога (Q/A)
+      description: |
+        Список `DialogueTurn` для канала веб/бот; пагинация по времени (`before_asked_at`, `limit`).
+      operationId: listDialogueTurns
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/DialogueId"
+        - $ref: "#/components/parameters/TurnsLimit"
+        - $ref: "#/components/parameters/BeforeAskedAt"
+      responses:
+        "200":
+          description: Страница ходов
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DialogueTurnsListResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
 components:
   securitySchemes:
     bearerAuth:
@@ -219,6 +362,66 @@ components:
         Идентификатор участия (`CohortMembership`) вызывающей стороны в этом потоке.
         Для `GET .../summary` должен указывать на участие с ролью преподавателя.
         При общем Bearer-токене клиента (MVP) без JWT это обязательный способ указать, кто запрашивает сводку.
+
+    ViewerMembershipIdOptional:
+      name: viewer_membership_id
+      in: query
+      required: false
+      schema:
+        type: string
+        format: uuid
+      description: |
+        Опционально: если указан — проверяется, что участие принадлежит этому потоку. Иначе данные доступны без проверки зрителя (MVP).
+
+    ActivityDays:
+      name: activity_days
+      in: query
+      required: false
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 366
+        default: 14
+      description: Число последних календарных дней для ряда `activity_by_day` на дашборде.
+
+    TurnsCursor:
+      name: turns_cursor
+      in: query
+      required: false
+      schema:
+        type: string
+        nullable: true
+      description: Непрозрачный курсор пагинации ленты ходов на дашборде (следующая страница).
+
+    TurnsLimit:
+      name: limit
+      in: query
+      required: false
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
+        default: 20
+      description: Размер страницы для ленты ходов или `GET .../dialogues/.../turns`.
+
+    TurnsSearchQ:
+      name: q
+      in: query
+      required: false
+      schema:
+        type: string
+        nullable: true
+      description: Подстрока поиска по тексту вопроса студента (ленты на дашборде).
+
+    BeforeAskedAt:
+      name: before_asked_at
+      in: query
+      required: false
+      schema:
+        type: string
+        format: date-time
+        nullable: true
+      description: Для пагинации истории — только ходы с `asked_at` строго раньше значения.
 
   schemas:
     ClientChannel:
@@ -285,6 +488,7 @@ components:
         - title
         - sort_order
         - required
+        - is_homework
       properties:
         id:
           type: string
@@ -297,6 +501,9 @@ components:
           type: integer
         required:
           type: boolean
+        is_homework:
+          type: boolean
+          description: Участие этапа в метриках «домашки» (лидерборд, KPI дашборда).
 
     ProgressCheckpointListResponse:
       type: object
@@ -324,6 +531,12 @@ components:
           type: string
           nullable: true
           maxLength: 2000
+        submission_links:
+          type: array
+          items:
+            type: string
+          maxItems: 32
+          description: URL сдачи (отдельно от текстового комментария).
 
     ProgressRecordResponse:
       type: object
@@ -352,9 +565,459 @@ components:
         comment:
           type: string
           nullable: true
+        submission_links:
+          type: array
+          items:
+            type: string
+          nullable: true
         updated_at:
           type: string
           format: date-time
+
+    PostAuthDevSessionRequest:
+      type: object
+      required:
+        - telegram_username
+      properties:
+        telegram_username:
+          type: string
+          minLength: 1
+          maxLength: 255
+          description: Username без обязательного ведущего `@`; нормализация на сервере.
+
+    DevSessionMembershipItem:
+      type: object
+      required:
+        - membership_id
+        - cohort_id
+        - role
+      properties:
+        membership_id:
+          type: string
+          format: uuid
+        cohort_id:
+          type: string
+          format: uuid
+        cohort_title:
+          type: string
+          nullable: true
+        role:
+          type: string
+          enum: [student, teacher]
+
+    PostAuthDevSessionResponse:
+      type: object
+      required:
+        - user_id
+        - memberships
+      properties:
+        user_id:
+          type: string
+          format: uuid
+        display_name:
+          type: string
+          nullable: true
+        memberships:
+          type: array
+          items:
+            $ref: "#/components/schemas/DevSessionMembershipItem"
+        web_dialogue_id:
+          type: string
+          format: uuid
+          nullable: true
+          description: Активный диалог канала `web` для выбранного участия, если сервер отдаёт сразу.
+
+    KpiWeekPair:
+      type: object
+      required:
+        - current_week
+        - previous_week
+      properties:
+        current_week:
+          type: integer
+          minimum: 0
+        previous_week:
+          type: integer
+          minimum: 0
+
+    TeacherDashboardKpis:
+      type: object
+      required:
+        - active_students
+        - homework_completed_events
+        - avg_progress_percent
+        - dialogue_questions
+      properties:
+        active_students:
+          $ref: "#/components/schemas/KpiWeekPair"
+        homework_completed_events:
+          $ref: "#/components/schemas/KpiWeekPair"
+          description: Число завершённых домашних чекпоинтов за неделю (сумма по группе).
+        avg_progress_percent:
+          type: object
+          required:
+            - current_week
+            - previous_week
+          properties:
+            current_week:
+              type: number
+              format: float
+              minimum: 0
+              maximum: 100
+            previous_week:
+              type: number
+              format: float
+              minimum: 0
+              maximum: 100
+        dialogue_questions:
+          $ref: "#/components/schemas/KpiWeekPair"
+          description: Число новых вопросов (ходов) по потоку за календарную неделю, все каналы.
+
+    ActivityByDayItem:
+      type: object
+      required:
+        - day
+        - question_count
+      properties:
+        day:
+          type: string
+          format: date
+        question_count:
+          type: integer
+          minimum: 0
+
+    DashboardDialogueTurnItem:
+      type: object
+      required:
+        - membership_id
+        - user_message_id
+        - assistant_message_id
+        - student_display_name
+        - question_text
+        - answer_text
+        - asked_at
+      properties:
+        membership_id:
+          type: string
+          format: uuid
+        user_message_id:
+          type: string
+          format: uuid
+        assistant_message_id:
+          type: string
+          format: uuid
+        student_display_name:
+          type: string
+          nullable: true
+        question_text:
+          type: string
+        answer_text:
+          type: string
+        asked_at:
+          type: string
+          format: date-time
+
+    DashboardRecentSubmissionItem:
+      type: object
+      required:
+        - membership_id
+        - checkpoint_id
+        - status
+        - updated_at
+      properties:
+        membership_id:
+          type: string
+          format: uuid
+        student_display_name:
+          type: string
+          nullable: true
+        checkpoint_id:
+          type: string
+          format: uuid
+        checkpoint_title:
+          type: string
+        status:
+          $ref: "#/components/schemas/ProgressStatus"
+        comment:
+          type: string
+          nullable: true
+        submission_links:
+          type: array
+          items:
+            type: string
+          nullable: true
+        updated_at:
+          type: string
+          format: date-time
+
+    DashboardMatrixCell:
+      type: object
+      required:
+        - checkpoint_id
+        - status
+      properties:
+        checkpoint_id:
+          type: string
+          format: uuid
+        status:
+          $ref: "#/components/schemas/ProgressStatus"
+        updated_at:
+          type: string
+          format: date-time
+          nullable: true
+
+    DashboardMatrixRow:
+      type: object
+      required:
+        - membership_id
+        - display_name
+        - score_completed
+        - score_total
+        - cells
+      properties:
+        membership_id:
+          type: string
+          format: uuid
+        display_name:
+          type: string
+          nullable: true
+        score_completed:
+          type: integer
+          minimum: 0
+        score_total:
+          type: integer
+          minimum: 0
+        cells:
+          type: array
+          items:
+            $ref: "#/components/schemas/DashboardMatrixCell"
+
+    TeacherDashboardRecentTurns:
+      type: object
+      required:
+        - items
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/DashboardDialogueTurnItem"
+        next_cursor:
+          type: string
+          nullable: true
+
+    TeacherDashboardResponse:
+      type: object
+      required:
+        - cohort_id
+        - kpis
+        - activity_by_day
+        - recent_turns
+        - recent_submissions
+        - matrix
+      properties:
+        cohort_id:
+          type: string
+          format: uuid
+        cohort_title:
+          type: string
+          nullable: true
+        kpis:
+          $ref: "#/components/schemas/TeacherDashboardKpis"
+        activity_by_day:
+          type: array
+          items:
+            $ref: "#/components/schemas/ActivityByDayItem"
+        recent_turns:
+          $ref: "#/components/schemas/TeacherDashboardRecentTurns"
+        recent_submissions:
+          type: array
+          items:
+            $ref: "#/components/schemas/DashboardRecentSubmissionItem"
+        matrix:
+          type: array
+          items:
+            $ref: "#/components/schemas/DashboardMatrixRow"
+
+    LeaderboardCheckpointStatus:
+      type: object
+      required:
+        - checkpoint_id
+        - status
+      properties:
+        checkpoint_id:
+          type: string
+          format: uuid
+        status:
+          $ref: "#/components/schemas/ProgressStatus"
+
+    LeaderboardEntry:
+      type: object
+      required:
+        - rank
+        - membership_id
+        - user_id
+        - progress_percent
+        - completed_checkpoints
+        - total_checkpoints
+        - homework_completed
+        - lesson_completed
+        - per_checkpoint
+      properties:
+        rank:
+          type: integer
+          minimum: 1
+        membership_id:
+          type: string
+          format: uuid
+        user_id:
+          type: string
+          format: uuid
+        display_name:
+          type: string
+          nullable: true
+        progress_percent:
+          type: number
+          format: float
+          minimum: 0
+          maximum: 100
+        completed_checkpoints:
+          type: integer
+          minimum: 0
+        total_checkpoints:
+          type: integer
+          minimum: 0
+        homework_completed:
+          type: integer
+          minimum: 0
+        lesson_completed:
+          type: integer
+          minimum: 0
+          description: Завершённые этапы без признака ДЗ (для горизонтали scatter).
+        scatter_x:
+          type: number
+          format: float
+          nullable: true
+          description: Нормализованная координата по урокам (0–1 или доля — как в реализации).
+        scatter_y:
+          type: number
+          format: float
+          nullable: true
+          description: Нормализованная координата по домашкам.
+        per_checkpoint:
+          type: array
+          items:
+            $ref: "#/components/schemas/LeaderboardCheckpointStatus"
+
+    LeaderboardResponse:
+      type: object
+      required:
+        - cohort_id
+        - checkpoints
+        - entries
+      properties:
+        cohort_id:
+          type: string
+          format: uuid
+        checkpoints:
+          type: array
+          items:
+            $ref: "#/components/schemas/ProgressCheckpointItem"
+        entries:
+          type: array
+          items:
+            $ref: "#/components/schemas/LeaderboardEntry"
+
+    StudentProgressRecordItem:
+      type: object
+      required:
+        - checkpoint_id
+        - status
+      properties:
+        checkpoint_id:
+          type: string
+          format: uuid
+        status:
+          $ref: "#/components/schemas/ProgressStatus"
+        updated_at:
+          type: string
+          format: date-time
+          nullable: true
+        comment:
+          type: string
+          nullable: true
+        submission_links:
+          type: array
+          items:
+            type: string
+          nullable: true
+
+    StudentProgressOverviewResponse:
+      type: object
+      required:
+        - cohort_id
+        - membership_id
+        - checkpoints
+        - records
+      properties:
+        cohort_id:
+          type: string
+          format: uuid
+        membership_id:
+          type: string
+          format: uuid
+        display_name:
+          type: string
+          nullable: true
+        checkpoints:
+          type: array
+          items:
+            $ref: "#/components/schemas/ProgressCheckpointItem"
+        records:
+          type: array
+          items:
+            $ref: "#/components/schemas/StudentProgressRecordItem"
+
+    DialogueTurnListItem:
+      type: object
+      required:
+        - user_message_id
+        - assistant_message_id
+        - question_text
+        - answer_text
+        - asked_at
+        - answered_at
+      properties:
+        user_message_id:
+          type: string
+          format: uuid
+        assistant_message_id:
+          type: string
+          format: uuid
+        question_text:
+          type: string
+        answer_text:
+          type: string
+        asked_at:
+          type: string
+          format: date-time
+        answered_at:
+          type: string
+          format: date-time
+
+    DialogueTurnsListResponse:
+      type: object
+      required:
+        - items
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/DialogueTurnListItem"
+        next_before_asked_at:
+          type: string
+          format: date-time
+          nullable: true
+          description: Передать как `before_asked_at` для следующей страницы (если не null).
 
     CohortSummaryParticipant:
       type: object

@@ -169,3 +169,41 @@ class DialogueService:
             raise ApiError(404, "NOT_FOUND", "Dialogue not found")
         await self._dialogues.delete_turns(dialogue_id)
         logger.info("dialogue_reset dialogue_id=%s", dialogue_id)
+
+    async def list_turns(
+        self,
+        *,
+        dialogue_id: UUID,
+        before_asked_at: Optional[datetime],
+        limit: int,
+    ) -> dict:
+        if not await self._dialogues.dialogue_exists(dialogue_id):
+            raise ApiError(404, "NOT_FOUND", "Dialogue not found")
+
+        fetch_limit = min(max(limit, 1), 100) + 1
+        rows_desc = await self._dialogues.list_turns_desc(
+            dialogue_id, before_asked_at=before_asked_at, limit=fetch_limit
+        )
+        has_more = len(rows_desc) > fetch_limit - 1
+        rows_desc = rows_desc[: fetch_limit - 1]
+        rows_asc = list(reversed(rows_desc))
+
+        items = [
+            {
+                "user_message_id": t.id,
+                "assistant_message_id": t.assistant_message_id,
+                "question_text": t.question_text,
+                "answer_text": t.answer_text,
+                "asked_at": t.asked_at.isoformat().replace("+00:00", "Z"),
+                "answered_at": t.answered_at.isoformat().replace("+00:00", "Z"),
+            }
+            for t in rows_asc
+        ]
+        next_before = None
+        if has_more and rows_asc:
+            oldest = rows_asc[0].asked_at
+            if oldest.tzinfo is None:
+                oldest = oldest.replace(tzinfo=timezone.utc)
+            next_before = oldest.isoformat().replace("+00:00", "Z")
+
+        return {"items": items, "next_before_asked_at": next_before}

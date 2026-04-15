@@ -25,6 +25,7 @@ class ProgressCheckpointItem(BaseModel):
     title: str
     sort_order: int
     required: bool
+    is_homework: bool
 
 
 class ProgressCheckpointListResponse(BaseModel):
@@ -34,6 +35,7 @@ class ProgressCheckpointListResponse(BaseModel):
 class PutProgressRecordRequest(BaseModel):
     status: ProgressStatusEnum
     comment: Optional[str] = Field(default=None, max_length=2000)
+    submission_links: Optional[list[str]] = Field(default=None)
 
 
 class ProgressRecordResponse(BaseModel):
@@ -43,6 +45,7 @@ class ProgressRecordResponse(BaseModel):
     checkpoint_id: UUID
     status: ProgressStatusEnum
     comment: Optional[str] = None
+    submission_links: Optional[list[str]] = None
     updated_at: str
 
 

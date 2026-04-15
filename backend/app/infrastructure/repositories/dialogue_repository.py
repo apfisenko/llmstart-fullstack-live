@@ -1,8 +1,10 @@
 from __future__ import annotations
 
+from datetime import datetime
+from typing import Optional
 from uuid import UUID
 
-from sqlalchemy import delete, select
+from sqlalchemy import and_, delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -48,16 +50,20 @@ class DialogueRepository:
         membership_id: UUID,
         channel: DialogueChannel,
     ) -> Dialogue | None:
-        return await self._session.scalar(
+        stmt = (
             select(Dialogue)
-            .where(
-                Dialogue.membership_id == membership_id,
-                Dialogue.channel == channel,
-                Dialogue.state == DialogueState.active,
-            )
             .join(CohortMembership, Dialogue.membership_id == CohortMembership.id)
-            .where(CohortMembership.cohort_id == cohort_id)
+            .where(
+                and_(
+                    CohortMembership.cohort_id == cohort_id,
+                    Dialogue.membership_id == membership_id,
+                    Dialogue.channel == channel,
+                    Dialogue.state == DialogueState.active,
+                )
+            )
+            .limit(1)
         )
+        return await self._session.scalar(stmt)
 
     async def ordered_turns(self, dialogue_id: UUID) -> list[DialogueTurn]:
         stmt = (
@@ -81,3 +87,16 @@ class DialogueRepository:
     async def dialogue_exists(self, dialogue_id: UUID) -> bool:
         found = await self._session.scalar(select(Dialogue.id).where(Dialogue.id == dialogue_id))
         return found is not None
+
+    async def list_turns_desc(
+        self,
+        dialogue_id: UUID,
+        *,
+        before_asked_at: Optional[datetime],
+        limit: int,
+    ) -> list[DialogueTurn]:
+        stmt = select(DialogueTurn).where(DialogueTurn.dialogue_id == dialogue_id)
+        if before_asked_at is not None:
+            stmt = stmt.where(DialogueTurn.asked_at < before_asked_at)
+        stmt = stmt.order_by(DialogueTurn.asked_at.desc(), DialogueTurn.id.desc()).limit(limit)
+        return list((await self._session.scalars(stmt)).all())

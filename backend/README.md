@@ -21,6 +21,8 @@ uv run uvicorn app.main:app --host 127.0.0.1 --port 8000
 
 **База данных:** только **PostgreSQL**. В **`backend/.env`** обязательна строка **`DATABASE_URL`** (`postgresql+asyncpg://...`). Миграции: **`make migrate-backend`** из корня репо или `cd backend && uv run alembic upgrade head` (нужен `uv sync --extra dev` для `psycopg2`).
 
+Эндпоинты, которые ходят в БД (в т.ч. **`POST /api/v1/auth/dev-session`**), при недоступном Postgres возвращают **503** и тело `error.code = DATABASE_UNAVAILABLE` вместо «немого» 500. Поднимите БД (**`make db-up`** / **`.\tasks.ps1 db-up`** из корня) и проверьте **`GET /health/db`**.
+
 Переменные — см. [`backend/.env.example`](.env.example). Опционально `BACKEND_API_CLIENT_TOKEN`: если задан, для `/api/v1/*` нужен заголовок `Authorization: Bearer <токен>`. Для реального LLM: **`OPENROUTER_API_KEY`** и блок `OPENROUTER_*`, `SYSTEM_PROMPT_PATH`, при необходимости `PROXY_URL`.
 
 Служебные маршруты: `GET /health`, `GET /health/db`. Документация OpenAPI: **`/docs`** (Swagger), **`/openapi.json`**, **`/redoc`**. Публичный API v1: префикс `/api/v1/` — см. [`docs/tech/api-contracts.md`](../docs/tech/api-contracts.md).

@@ -3,7 +3,10 @@ name: find-skills
 description: >-
   Находит и выбирает релевантные Agent Skills в репозитории. Используй при
   старте незнакомой задачи, когда пользователь просит «какой skill применить»,
-  или перед крупными изменениями в API, тестах или FastAPI.
+  или перед крупными изменениями в API, тестах, FastAPI, UI (shadcn) или
+  Next.js/Vercel (`vercel-react-best-practice`, маршруты App Router —
+  `nextjs-app-router-patterns`); при неочевидных багах и расхождениях окружений —
+  `sharp-edges`.
 ---
 
 # Поиск skills в проекте

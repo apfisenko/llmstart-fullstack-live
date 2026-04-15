@@ -51,7 +51,7 @@ async def engine():
 @pytest_asyncio.fixture
 async def seed_data(engine):
     async with AsyncSession(engine, expire_on_commit=False) as session:
-        session.add(User(id=USER_ID_A, name="Student A"))
+        session.add(User(id=USER_ID_A, name="Student A", telegram_username="student_a"))
         session.add(User(id=USER_ID_B, name="Student B"))
         session.add(User(id=USER_ID_C, name="Extra"))
         session.add(User(id=USER_ID_TEACHER, name="Teacher"))
@@ -92,16 +92,18 @@ async def seed_data(engine):
                 title="Week 1",
                 sort_order=1,
                 required=True,
+                is_homework=False,
             )
         )
         session.add(
             ProgressCheckpoint(
                 id=CHECKPOINT_2,
                 cohort_id=COHORT_ID,
-                code="w2",
-                title="Week 2",
+                code="hw_w2",
+                title="Week 2 HW",
                 sort_order=2,
                 required=False,
+                is_homework=True,
             )
         )
         await session.commit()

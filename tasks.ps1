@@ -1,10 +1,10 @@
-#requires -Version 5.1
+﻿#requires -Version 5.1
 <#
 .SYNOPSIS
   Makefile-like tasks for Windows PowerShell (dev, DB, tests).
 
 .DESCRIPTION
-  Run from repo root: .\tasks.ps1 install | db-up | db-migrate | test-backend ...
+  Run from repo root: .\tasks.ps1 install | db-up | db-status | db-migrate | test-backend ...
 
   Если в PowerShell нет `docker` в PATH, скрипт сам использует `wsl -e docker compose`
   (Docker только внутри WSL). Иначе можно задать вручную:
@@ -65,8 +65,102 @@ function Invoke-DockerCompose {
     }
 }
 
+function Get-RepoRootWslPath {
+    $out = (& wsl wslpath -a $RepoRoot | Out-String).Trim()
+    if ($LASTEXITCODE -ne 0 -or [string]::IsNullOrWhiteSpace($out)) {
+        throw "wslpath не смог преобразовать путь репозитория для WSL: $RepoRoot. Запущен ли WSL?"
+    }
+    return $out
+}
+
+function Invoke-DockerComposeWsl {
+    param([string[]] $ArgumentList)
+    if ($ArgumentList.Count -lt 1) {
+        throw "Invoke-DockerComposeWsl: укажите аргументы compose (например stop, down)"
+    }
+    $wslRoot = Get-RepoRootWslPath
+    & wsl -e docker compose --project-directory $wslRoot @ArgumentList
+    if ($LASTEXITCODE -ne 0 -and $null -ne $LASTEXITCODE) {
+        exit $LASTEXITCODE
+    }
+}
+
 function Get-PostgresDatabaseUrl {
     return "postgresql+asyncpg://$($env:POSTGRES_USER):$($env:POSTGRES_PASSWORD)@127.0.0.1:5432/$($env:POSTGRES_DB)"
+}
+
+function Get-BackendEnvDatabaseUrlLine {
+    $path = Join-Path $RepoRoot "backend\.env"
+    if (-not (Test-Path -LiteralPath $path)) {
+        return $null
+    }
+    foreach ($line in Get-Content -LiteralPath $path) {
+        if ($line -match '^\s*DATABASE_URL\s*=\s*(.+)\s*$') {
+            return $matches[1].Trim().Trim('"').Trim("'")
+        }
+    }
+    return $null
+}
+
+function Parse-DatabaseUrlTcpTarget {
+    param([string] $Url)
+    $hostOut = "127.0.0.1"
+    $portOut = 5432
+    if ([string]::IsNullOrWhiteSpace($Url)) {
+        return @{ Host = $hostOut; Port = $portOut }
+    }
+    $idx = $Url.LastIndexOf('@')
+    if ($idx -lt 0) {
+        return @{ Host = $hostOut; Port = $portOut }
+    }
+    $afterAt = $Url.Substring($idx + 1)
+    $slashIdx = $afterAt.IndexOf('/')
+    if ($slashIdx -ge 0) {
+        $afterAt = $afterAt.Substring(0, $slashIdx)
+    }
+    $hostPart = $afterAt
+    if ($afterAt.Contains(':')) {
+        $lastColon = $afterAt.LastIndexOf(':')
+        $hostPart = $afterAt.Substring(0, $lastColon)
+        $portStr = $afterAt.Substring($lastColon + 1)
+        if ($portStr -match '^\d+$') {
+            $portOut = [int]$portStr
+        }
+    }
+    $h = $hostPart.Trim().ToLowerInvariant()
+    if ($h -eq "localhost" -or $h -eq "::1") {
+        $hostOut = "127.0.0.1"
+    }
+    else {
+        $hostOut = $hostPart.Trim()
+    }
+    return @{ Host = $hostOut; Port = $portOut }
+}
+
+function Get-PostgresTcpTargetForDev {
+    $fromFile = Get-BackendEnvDatabaseUrlLine
+    return (Parse-DatabaseUrlTcpTarget -Url $fromFile)
+}
+
+function Test-PostgresTcp {
+    param(
+        [string] $ComputerName,
+        [int] $Port
+    )
+    $tcp = $null
+    try {
+        $tcp = New-Object System.Net.Sockets.TcpClient
+        $tcp.Connect($ComputerName, $Port)
+        return ($tcp.Connected)
+    }
+    catch {
+        return $false
+    }
+    finally {
+        if ($null -ne $tcp) {
+            $tcp.Close()
+        }
+    }
 }
 
 function Wait-PostgresPort {
@@ -77,21 +171,20 @@ function Wait-PostgresPort {
     )
     $deadline = (Get-Date).AddSeconds($TimeoutSec)
     while ((Get-Date) -lt $deadline) {
-        $tcp = $null
-        try {
-            $tcp = New-Object System.Net.Sockets.TcpClient
-            $tcp.Connect($ComputerName, $Port)
-            if ($tcp.Connected) { return }
-        }
-        catch {
-            # порт ещё не слушает — повторяем
-        }
-        finally {
-            if ($null -ne $tcp) { $tcp.Close() }
+        if (Test-PostgresTcp -ComputerName $ComputerName -Port $Port) {
+            return
         }
         Start-Sleep -Milliseconds 300
     }
-    throw "PostgreSQL недоступен на ${ComputerName}:${Port} за $TimeoutSec с (после docker compose up)."
+    throw @"
+PostgreSQL не принимает TCP на ${ComputerName}:${Port} за $TimeoutSec с.
+
+Проверьте по шагам:
+  1) Запущен ли Docker (Docker Desktop) и контейнер: из корня репозитория — .\tasks.ps1 db-up (или docker compose up -d --wait).
+  2) Порт $Port не занят другим Postgres на хосте: netstat -ano | findstr :$Port
+  3) Если docker только в WSL: `$env:DOCKER_COMPOSE = 'wsl -e docker compose'; .\tasks.ps1 db-up`
+  4) backend/.env — DATABASE_URL с хостом 127.0.0.1 и тем же портом, что проброшен из compose (по умолчанию 5432).
+"@
 }
 
 function Invoke-Backend {
@@ -169,6 +262,20 @@ function Task-DbTestCreate {
 }
 
 function Task-BackendDev {
+    if (-not $env:LLMSTART_SKIP_POSTGRES_WAIT) {
+        try {
+            $pg = Get-PostgresTcpTargetForDev
+            Write-Host (
+                "Ожидание TCP PostgreSQL $($pg.Host):$($pg.Port) (из backend/.env DATABASE_URL; таймаут как у db-up, 90 с)..."
+            ) -ForegroundColor DarkGray
+            Wait-PostgresPort -ComputerName $pg.Host -Port $pg.Port -TimeoutSec 90
+        }
+        catch {
+            Write-Host $_.Exception.Message -ForegroundColor Red
+            Write-Host "Чтобы запустить uvicorn без этой проверки (удалённый Postgres и т.д.): `$env:LLMSTART_SKIP_POSTGRES_WAIT=1" -ForegroundColor Yellow
+            exit 1
+        }
+    }
     Invoke-Backend @("uv", "sync")
     Invoke-Backend @("uv", "run", "uvicorn", "app.main:app", "--reload")
 }
@@ -213,8 +320,22 @@ function Task-DbUp {
     Task-DbMigrateAll
 }
 
+function Task-DbUpWsl {
+    Invoke-DockerComposeWsl @("up", "-d", "--wait")
+    Wait-PostgresPort
+    Task-DbMigrateAll
+}
+
 function Task-DbDown {
     Invoke-DockerCompose @("down")
+}
+
+function Task-DbStopWsl {
+    Invoke-DockerComposeWsl @("stop")
+}
+
+function Task-DbDownWsl {
+    Invoke-DockerComposeWsl @("down")
 }
 
 function Task-DbReset {
@@ -238,34 +359,55 @@ function Task-DbShell {
     )
 }
 
+function Task-DbStatus {
+    Write-Host "=== docker compose ps (postgres) ===" -ForegroundColor Cyan
+    Invoke-DockerCompose @("ps", "-a", "--format", "table")
+    Write-Host ""
+    $pg = Get-PostgresTcpTargetForDev
+    Write-Host "=== TCP $($pg.Host):$($pg.Port) (как в backend/.env DATABASE_URL) ===" -ForegroundColor Cyan
+    if (Test-PostgresTcp -ComputerName $pg.Host -Port $pg.Port) {
+        Write-Host "OK: порт доступен (что-то слушает)." -ForegroundColor Green
+    }
+    else {
+        Write-Host "FAIL: порт $($pg.Host):$($pg.Port) недоступен." -ForegroundColor Red
+        Write-Host "Если контейнер не запущен: .\tasks.ps1 db-up" -ForegroundColor Yellow
+    }
+}
+
 function Show-Help {
-    Write-Host @"
-Usage: .\tasks.ps1 <target>
-
-  install                 uv sync (repo root + backend)
-  run                     bot: uv run python -m bot.main
-  lint, backend-lint      ruff (bot + backend)
-  format                  ruff format + fix
-  test, test-backend, backend-test, test-all
-                          pytest tests/pg (PostgreSQL)
-  backend-dev             uvicorn --reload
-  backend-typecheck       note about mypy
-  db-up, db-down          docker compose; после db-up — миграции на llmstart и llmstart_test
-  db-reset                down -v, up --wait, миграции на обе БД
-  db-migrate, migrate-backend
-                          только llmstart: uv sync --extra dev; alembic upgrade head
-  db-migrate-test-db      только POSTGRES_TEST_DB (Alembic)
-  db-migrate-all          db-migrate + db-test-create + db-migrate-test-db
-  db-test-create          CREATE llmstart_test if missing (pytest DB)
-  db-migrate-test, migrate-backend-test
-                          db-migrate-all + pytest tests/pg
-  db-shell                psql in postgres container
-
-Env: DOCKER_COMPOSE, POSTGRES_*, POSTGRES_TEST_DB, DATABASE_URL, TEST_DATABASE_URL (see Makefile).
-
-Docker только в WSL: если `docker` не в PATH Windows, скрипт вызывает `wsl -e docker compose`.
-Свой дистрибутив: `$env:DOCKER_COMPOSE = 'wsl -d Ubuntu -e docker compose'`
-"@
+    # Без @" "@: в Windows PowerShell 5.1 обратные кавычки/`$ внутри расширяемой here-string ломают разбор.
+    @(
+        'Usage: .\tasks.ps1 <target>'
+        ''
+        '  install                 uv sync (repo root + backend)'
+        '  run                     bot: uv run python -m bot.main'
+        '  lint, backend-lint      ruff (bot + backend)'
+        '  format                  ruff format + fix'
+        '  test, test-backend, backend-test, test-all'
+        '                          pytest tests/pg (PostgreSQL)'
+        '  backend-dev             uvicorn --reload (ждёт TCP из backend/.env; см. LLMSTART_SKIP_POSTGRES_WAIT)'
+        '  backend-typecheck       note about mypy'
+        '  db-up, db-down          docker compose; после db-up — миграции на llmstart и llmstart_test'
+        '  db-up-wsl               compose up -d --wait через WSL, затем ожидание порта и миграции (как db-up)'
+        '  db-stop-wsl             compose stop через WSL (wslpath + --project-directory)'
+        '  db-down-wsl             compose down через WSL (без -v; тома сохраняются как у db-down)'
+        '  db-status               docker compose ps + TCP (хост/порт из backend/.env DATABASE_URL)'
+        '  db-reset                down -v, up --wait, миграции на обе БД'
+        '  db-migrate, migrate-backend'
+        '                          только llmstart: uv sync --extra dev; alembic upgrade head'
+        '  db-migrate-test-db      только POSTGRES_TEST_DB (Alembic)'
+        '  db-migrate-all          db-migrate + db-test-create + db-migrate-test-db'
+        '                          (Alembic 0007: демо-когорта demo_frontend_mvp, akozhin / 162684825)'
+        '  db-test-create          CREATE llmstart_test if missing (pytest DB)'
+        '  db-migrate-test, migrate-backend-test'
+        '                          db-migrate-all + pytest tests/pg'
+        '  db-shell                psql in postgres container'
+        ''
+        'Env: DOCKER_COMPOSE, POSTGRES_*, POSTGRES_TEST_DB, DATABASE_URL, TEST_DATABASE_URL (see Makefile).'
+        ''
+        'Docker только в WSL: если `docker` не в PATH Windows, скрипт вызывает `wsl -e docker compose`.'
+        'Свой дистрибутив: $env:DOCKER_COMPOSE = ''wsl -d Ubuntu -e docker compose'''
+    ) | ForEach-Object { Write-Host $_ }
 }
 
 switch -Regex ($Task.ToLowerInvariant()) {
@@ -277,7 +419,10 @@ switch -Regex ($Task.ToLowerInvariant()) {
     "^(backend-dev)$" { Task-BackendDev }
     "^(backend-typecheck)$" { Task-BackendTypecheck }
     "^(db-up)$" { Task-DbUp }
+    "^(db-up-wsl)$" { Task-DbUpWsl }
     "^(db-down)$" { Task-DbDown }
+    "^(db-stop-wsl)$" { Task-DbStopWsl }
+    "^(db-down-wsl)$" { Task-DbDownWsl }
     "^(db-migrate|migrate-backend)$" { Task-DbMigrate }
     "^(db-migrate-test-db)$" { Task-DbMigrateTestDb }
     "^(db-migrate-all)$" { Task-DbMigrateAll }
@@ -285,6 +430,7 @@ switch -Regex ($Task.ToLowerInvariant()) {
     "^(db-test-create)$" { Task-DbTestCreate }
     "^(db-migrate-test|migrate-backend-test)$" { Task-DbMigrateTest }
     "^(db-shell)$" { Task-DbShell }
+    "^(db-status)$" { Task-DbStatus }
     "^(help|-h|--help|\?)$" { Show-Help }
     default {
         Write-Host "Unknown target: $Task" -ForegroundColor Red

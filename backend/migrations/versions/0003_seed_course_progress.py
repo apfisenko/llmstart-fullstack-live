@@ -111,9 +111,9 @@ def upgrade() -> None:
             sa.text(
                 """
                 INSERT INTO progress_checkpoints (
-                    id, cohort_id, code, title, sort_order, required
+                    id, cohort_id, code, title, sort_order, required, is_homework
                 )
-                VALUES (:id, :cohort_id, :code, :title, :sort_order, TRUE)
+                VALUES (:id, :cohort_id, :code, :title, :sort_order, TRUE, TRUE)
                 """
             ),
             {

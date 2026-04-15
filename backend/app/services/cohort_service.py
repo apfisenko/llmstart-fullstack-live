@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from collections.abc import Sequence
 from typing import Optional
 from uuid import UUID
 
@@ -27,6 +28,7 @@ class CohortService:
                     "title": r.title,
                     "sort_order": r.sort_order,
                     "required": r.required,
+                    "is_homework": r.is_homework,
                 }
                 for r in rows
             ]
@@ -40,6 +42,7 @@ class CohortService:
         checkpoint_id: UUID,
         status: str,
         comment: Optional[str],
+        submission_links: Optional[Sequence[str]] = None,
     ) -> dict:
         membership = await self._progress.membership_in_cohort(cohort_id, membership_id)
         if membership is None:
@@ -52,6 +55,12 @@ class CohortService:
             raise ApiError(404, "NOT_FOUND", "Checkpoint not found")
 
         st = ProgressStatus(status)
+        links: Optional[list[str]] = None
+        if submission_links is not None:
+            if len(list(submission_links)) > 32:
+                raise ApiError(422, "VALIDATION_ERROR", "Too many submission_links")
+            links = list(submission_links)
+
         record = await self._progress.progress_record(membership_id, checkpoint_id)
         if record is None:
             record = ProgressRecord(
@@ -59,11 +68,14 @@ class CohortService:
                 checkpoint_id=checkpoint_id,
                 status=st,
                 comment=comment,
+                submission_links=links,
             )
             self._progress.add_progress_record(record)
         else:
             record.status = st
             record.comment = comment
+            if links is not None:
+                record.submission_links = links
         await self._session.flush()
         await self._session.refresh(record)
 
@@ -75,6 +87,9 @@ class CohortService:
             "checkpoint_id": checkpoint_id,
             "status": record.status.value,
             "comment": record.comment,
+            "submission_links": record.submission_links
+            if isinstance(record.submission_links, list)
+            else None,
             "updated_at": updated_at.isoformat().replace("+00:00", "Z"),
         }
 
@@ -125,6 +140,7 @@ class CohortService:
                     "title": cp.title,
                     "sort_order": cp.sort_order,
                     "required": cp.required,
+                    "is_homework": cp.is_homework,
                 }
                 for cp in checkpoints
             ],

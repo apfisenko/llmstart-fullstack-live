@@ -1,12 +1,16 @@
+from datetime import datetime
+from typing import Optional
 from uuid import UUID
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Query
 
 from app.api.deps import DialogueServiceDep, require_client_token_if_configured
+from app.api.errors import ApiError
 from app.api.v1.schemas_dialogues import (
     PostDialogueMessageRequest,
     PostDialogueMessageResponse,
 )
+from app.api.v1.schemas_frontend import DialogueTurnsListResponse
 
 router = APIRouter(dependencies=[Depends(require_client_token_if_configured)])
 
@@ -36,3 +40,30 @@ async def post_dialogue_reset(
     service: DialogueServiceDep,
 ) -> None:
     await service.reset(dialogue_id)
+
+
+def _parse_before_asked_at(raw: Optional[str]) -> Optional[datetime]:
+    if raw is None or raw == "":
+        return None
+    try:
+        return datetime.fromisoformat(raw.replace("Z", "+00:00"))
+    except ValueError as exc:
+        raise ApiError(422, "VALIDATION_ERROR", "Invalid before_asked_at") from exc
+
+
+@router.get(
+    "/dialogues/{dialogue_id}/turns",
+    response_model=DialogueTurnsListResponse,
+)
+async def list_dialogue_turns(
+    dialogue_id: UUID,
+    service: DialogueServiceDep,
+    limit: int = Query(20, ge=1, le=100),
+    before_asked_at: Optional[str] = Query(None),
+) -> DialogueTurnsListResponse:
+    data = await service.list_turns(
+        dialogue_id=dialogue_id,
+        before_asked_at=_parse_before_asked_at(before_asked_at),
+        limit=limit,
+    )
+    return DialogueTurnsListResponse.model_validate(data)

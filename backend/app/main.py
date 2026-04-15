@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import errno
 import logging
 import os
 from contextlib import asynccontextmanager
@@ -9,6 +10,8 @@ import httpx
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 from sqlalchemy import text
+from sqlalchemy.engine.url import make_url
+from sqlalchemy.exc import OperationalError
 from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, async_sessionmaker
 
 from app.api.errors import ApiError
@@ -24,6 +27,22 @@ from app.infrastructure.llm_assistant import (
 from app.services.guest_dialogue_service import GuestDialogueService
 
 logger = logging.getLogger(__name__)
+
+
+def _database_unavailable_response() -> JSONResponse:
+    return JSONResponse(
+        status_code=503,
+        content={
+            "error": {
+                "code": "DATABASE_UNAVAILABLE",
+                "message": (
+                    "Cannot connect to PostgreSQL. Start the database (e.g. "
+                    "`make db-up` / `tasks.ps1 db-up`) and check DATABASE_URL in backend/.env."
+                ),
+                "details": None,
+            }
+        },
+    )
 
 
 def create_app(
@@ -44,12 +63,19 @@ def create_app(
         raise ValueError("engine and session_factory must both be set or both omitted")
 
     llm_override = llm
+    _db_url_parsed = make_url(resolved_settings.database_url)
 
     @asynccontextmanager
     async def lifespan(app: FastAPI):
         level_name = os.environ.get("LOG_LEVEL", "INFO")
         level = getattr(logging, level_name.upper(), logging.INFO)
         logging.basicConfig(level=level, format="%(levelname)s %(name)s %(message)s")
+        logger.info(
+            "backend_db_target host=%s port=%s driver=%s",
+            _db_url_parsed.host,
+            _db_url_parsed.port,
+            _db_url_parsed.drivername,
+        )
 
         if llm_override is None:
             if resolved_settings.openrouter_api_key:
@@ -77,6 +103,11 @@ def create_app(
     application = FastAPI(title="LLMStart Backend", lifespan=lifespan)
     application.state.engine = eng
     application.state.session_factory = sess_factory
+    application.state.database_connect_target = (
+        f"{_db_url_parsed.host}:{_db_url_parsed.port}"
+        if _db_url_parsed.host
+        else ""
+    )
     if llm_override is not None:
         application.state.llm = llm_override
         application.state.guest_dialogue = GuestDialogueService(llm_override)
@@ -108,6 +139,16 @@ def create_app(
             },
         )
 
+    @application.exception_handler(OperationalError)
+    async def sqlalchemy_operational_error_handler(_request, exc: OperationalError):
+        logger.exception("database_operational_error")
+        return _database_unavailable_response()
+
+    @application.exception_handler(ConnectionRefusedError)
+    async def connection_refused_handler(_request, exc: ConnectionRefusedError):
+        logger.exception("database_connection_refused")
+        return _database_unavailable_response()
+
     @application.get("/health")
     async def health():
         return {"status": "ok"}
@@ -116,13 +157,44 @@ def create_app(
     async def health_db(request: Request):
         engine = request.app.state.engine
         try:
-            async with engine.connect() as conn:
+            async with engine.begin() as conn:
                 await conn.execute(text("SELECT 1"))
-        except Exception:
+        except Exception as exc:
             logger.exception("Database health check failed")
+            detail: dict = {"exception": type(exc).__name__}
+            if isinstance(exc, OSError):
+                detail["errno"] = getattr(exc, "errno", None)
+            msg = str(exc).split("\n", 1)[0].strip()
+            if msg and len(msg) < 240:
+                detail["message"] = msg
+            target = getattr(request.app.state, "database_connect_target", None)
+            if target:
+                detail["connect_target"] = target
+
+            conn_refused = isinstance(exc, ConnectionRefusedError) or (
+                isinstance(exc, OSError) and getattr(exc, "errno", None) == errno.ECONNREFUSED
+            )
+            if conn_refused:
+                hint = (
+                    "Отказ TCP к connect_target (detail): backend не туда, что db-status, "
+                    "или другой DATABASE_URL в IDE. backend/.env теперь по пути к файлу. "
+                    "Перезапустите backend. Затем: .\\tasks.ps1 db-up, .\\tasks.ps1 db-status."
+                )
+            else:
+                hint = (
+                    "Проверьте DATABASE_URL в backend/.env (логин/пароль/имя БД). "
+                    "С Docker на Windows лучше 127.0.0.1, не localhost (::1). "
+                    "После правки .env перезапустите uvicorn."
+                )
+
             return JSONResponse(
                 status_code=503,
-                content={"status": "error", "database": "unavailable"},
+                content={
+                    "status": "error",
+                    "database": "unavailable",
+                    "detail": detail,
+                    "hint": hint,
+                },
             )
         return {"status": "ok", "database": "ok"}
 

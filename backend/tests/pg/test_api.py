@@ -14,6 +14,7 @@ from tests.constants import (
     MEMBERSHIP_ID,
     OTHER_MEMBERSHIP_ID,
     TEACHER_MEMBERSHIP_ID,
+    USER_ID_A,
 )
 
 
@@ -369,7 +370,9 @@ async def test_list_progress_checkpoints_ok(client):
     data = r.json()
     assert len(data["items"]) == 2
     assert data["items"][0]["code"] == "w1"
-    assert data["items"][1]["code"] == "w2"
+    assert data["items"][0]["is_homework"] is False
+    assert data["items"][1]["code"] == "hw_w2"
+    assert data["items"][1]["is_homework"] is True
 
 
 async def test_list_progress_checkpoints_not_found(client):
@@ -382,12 +385,17 @@ async def test_list_progress_checkpoints_not_found(client):
 async def test_put_progress_record_ok(client):
     r = await client.put(
         f"/api/v1/cohorts/{COHORT_ID}/memberships/{MEMBERSHIP_ID}/progress-records/{CHECKPOINT_1}",
-        json={"status": "completed", "comment": "done"},
+        json={
+            "status": "completed",
+            "comment": "done",
+            "submission_links": ["https://example.com/a"],
+        },
     )
     assert r.status_code == 200
     body = r.json()
     assert body["status"] == "completed"
     assert body["comment"] == "done"
+    assert body["submission_links"] == ["https://example.com/a"]
     assert body["membership_id"] == str(MEMBERSHIP_ID)
     assert body["checkpoint_id"] == str(CHECKPOINT_1)
 
@@ -421,3 +429,88 @@ async def test_get_summary_student_forbidden(client):
         params={"viewer_membership_id": str(MEMBERSHIP_ID)},
     )
     assert r.status_code == 403
+
+
+async def test_post_auth_dev_session_ok(client):
+    r = await client.post(
+        "/api/v1/auth/dev-session",
+        json={"telegram_username": "@Student_A"},
+    )
+    assert r.status_code == 200
+    data = r.json()
+    assert data["user_id"] == str(USER_ID_A)
+    assert any(m["membership_id"] == str(MEMBERSHIP_ID) for m in data["memberships"])
+
+
+async def test_post_auth_dev_session_not_found(client):
+    r = await client.post(
+        "/api/v1/auth/dev-session",
+        json={"telegram_username": "nope_missing_user"},
+    )
+    assert r.status_code == 404
+
+
+async def test_get_teacher_dashboard_ok(client):
+    r = await client.get(
+        f"/api/v1/cohorts/{COHORT_ID}/teacher-dashboard",
+        params={"viewer_membership_id": str(TEACHER_MEMBERSHIP_ID)},
+    )
+    assert r.status_code == 200
+    data = r.json()
+    assert data["cohort_id"] == str(COHORT_ID)
+    assert "kpis" in data
+    assert "activity_by_day" in data
+    assert "recent_turns" in data
+    assert "matrix" in data
+
+
+async def test_get_teacher_dashboard_student_forbidden(client):
+    r = await client.get(
+        f"/api/v1/cohorts/{COHORT_ID}/teacher-dashboard",
+        params={"viewer_membership_id": str(MEMBERSHIP_ID)},
+    )
+    assert r.status_code == 403
+
+
+async def test_get_leaderboard_ok(client):
+    r = await client.get(f"/api/v1/cohorts/{COHORT_ID}/leaderboard")
+    assert r.status_code == 200
+    data = r.json()
+    assert data["cohort_id"] == str(COHORT_ID)
+    assert len(data["checkpoints"]) == 2
+    assert len(data["entries"]) >= 2
+
+
+async def test_get_progress_overview_ok(client):
+    r = await client.get(
+        f"/api/v1/cohorts/{COHORT_ID}/memberships/{MEMBERSHIP_ID}/progress-overview",
+    )
+    assert r.status_code == 200
+    data = r.json()
+    assert data["membership_id"] == str(MEMBERSHIP_ID)
+    assert len(data["checkpoints"]) == 2
+    assert len(data["records"]) == 2
+
+
+async def test_get_progress_overview_teacher_forbidden(client):
+    r = await client.get(
+        f"/api/v1/cohorts/{COHORT_ID}/memberships/{TEACHER_MEMBERSHIP_ID}/progress-overview",
+    )
+    assert r.status_code == 403
+
+
+async def test_list_dialogue_turns_ok(client):
+    create = await client.post(
+        f"/api/v1/cohorts/{COHORT_ID}/dialogues/messages",
+        json={
+            "membership_id": str(MEMBERSHIP_ID),
+            "channel": "web",
+            "content": "hello",
+        },
+    )
+    dialogue_id = create.json()["dialogue_id"]
+    r = await client.get(f"/api/v1/dialogues/{dialogue_id}/turns", params={"limit": 10})
+    assert r.status_code == 200
+    data = r.json()
+    assert len(data["items"]) == 1
+    assert data["items"][0]["question_text"] == "hello"

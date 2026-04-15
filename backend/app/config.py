@@ -1,20 +1,27 @@
 from __future__ import annotations
 
 from functools import lru_cache
+from pathlib import Path
 from typing import Optional
 
 from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
+from sqlalchemy.engine.url import make_url
+
+_BACKEND_DIR = Path(__file__).resolve().parent.parent
+_BACKEND_ENV = _BACKEND_DIR / ".env"
+_settings_config_kwargs: dict = {
+    "env_file_encoding": "utf-8",
+    "extra": "ignore",
+}
+if _BACKEND_ENV.is_file():
+    _settings_config_kwargs["env_file"] = (_BACKEND_ENV,)
 
 
 class Settings(BaseSettings):
-    """Настройки читаются из `backend/.env` (cwd процесса — каталог backend)."""
+    """Чтение из `backend/.env` (абсолютный путь) и переменных окружения процесса."""
 
-    model_config = SettingsConfigDict(
-        env_file=".env",
-        env_file_encoding="utf-8",
-        extra="ignore",
-    )
+    model_config = SettingsConfigDict(**_settings_config_kwargs)
 
     database_url: str = Field(
         ...,
@@ -62,6 +69,19 @@ class Settings(BaseSettings):
         s = str(value)
         if not s.startswith("postgresql"):
             raise ValueError("Поддерживается только PostgreSQL (postgresql+asyncpg://...).")
+        return value
+
+    @field_validator("database_url", mode="after")
+    @classmethod
+    def loopback_ipv4_for_localhost(cls, value: str) -> str:
+        """localhost → 127.0.0.1: Docker на Windows часто не слушает ::1 на порту compose."""
+        try:
+            u = make_url(value)
+        except Exception:
+            return value
+        host = (u.host or "").lower()
+        if host in ("localhost", "::1"):
+            return str(u.set(host="127.0.0.1"))
         return value
 
     @field_validator("openrouter_api_key", mode="before")
