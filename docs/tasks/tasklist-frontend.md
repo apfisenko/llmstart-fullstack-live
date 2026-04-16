@@ -17,7 +17,7 @@
 
 | Задачи этого файла | Итерация `[plan.md](../plan.md)`                                                                                                                                                |
 | ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 01–08              | Итерация 4 — Реализация Frontend                                                                                                                                                |
+| 01–08, **11**      | Итерация 4 — Реализация Frontend; **11** закрывает пробел зоны C (кабинет студента), не входивший в исходную нумерацию 04–07                                                    |
 | 09–10              | Логически после MVP веб-UI: пересечение с итерациями **5** (интеграция клиентов), **6** (инфраструктура) и отдельными ADR; при планировании спринта уточнить привязку к roadmap |
 
 
@@ -68,6 +68,7 @@
 | 08     | Ревью качества frontend (best practices, критические исправления)                         | [4](#block-frontend-4) | ✅      | [план](impl/frontend/iteration-4-frontend/tasks/task-08-frontend-quality/plan.md) | [summary](impl/frontend/iteration-4-frontend/tasks/task-08-frontend-quality/summary.md)   |
 | 09     | Голосовой режим чата (веб + Telegram-бот)                                                 | [5](#block-frontend-5) | ⛔     | [план](impl/frontend/iteration-4-frontend/tasks/task-09-voice-chat/plan.md) | [summary](impl/frontend/iteration-4-frontend/tasks/task-09-voice-chat/summary.md)               |
 | 10     | Ответы на вопросы по данным БД (Text-to-SQL): веб + бот через backend; после плана — **не в работе** (усложнение), бэклог | [5](#block-frontend-5) | ⛔     | [план](impl/frontend/iteration-4-frontend/tasks/task-10-text-to-sql/plan.md) | [summary](impl/frontend/iteration-4-frontend/tasks/task-10-text-to-sql/summary.md)             |
+| 11     | Кабинет студента (зона C): прогресс, список уроков, сдача через API                                                       | [3](#block-frontend-3) | ✅     | [план](impl/frontend/iteration-4-frontend/tasks/task-11-student-cabinet/plan.md) | [summary](impl/frontend/iteration-4-frontend/tasks/task-11-student-cabinet/summary.md)       |
 
 
 ---
@@ -225,7 +226,7 @@
 
 
 
-## Блок 3 — Задачи 04–07: экраны и чат
+## Блок 3 — Задачи 04–07 и 11: экраны, кабинет студента и чат
 
 ### Задача 04: Панель преподавателя ✅
 
@@ -374,13 +375,57 @@
 
 ---
 
+### Задача 11: Кабинет студента (зона C) ✅
+
+**Контекст:** зона C заложена в задаче 01 и в [`docs/tech/frontend-requirements.md`](../tech/frontend-requirements.md) §6.3; API — в задаче 02 и [`api-contracts.md`](../tech/api-contracts.md). Отдельной задачи на реализацию экрана в нумерации 04–07 не было — маршрут остался заглушкой (`frontend/web/app/(app)/student/page.tsx`).
+
+#### Цель
+
+Страница **личного кабинета студента**: приветствие, сводка прогресса, список уроков с правилами «сдан / текущий / заблокирован», форма сдачи с `comment` и `submission_links`; только HTTP API ядра, без вызова LLM с клиента.
+
+#### Состав работ
+
+- [x] Прокси Next (при необходимости согласовать с уже принятым паттерном BFF): `GET .../memberships/{membership_id}/progress-overview`, `PUT .../progress-records/{checkpoint_id}` — пути под `app/api/v1/...` как у лидерборда/дашборда.
+- [x] Типы ответа/запроса: отдельный модуль (например `lib/student-progress-types.ts`) по OpenAPI / фактическому JSON backend.
+- [x] UI страницы `app/(app)/student/page.tsx`: шапка (имя, переход в чат — ссылка на `/chat` или открытие FAB по согласованию), блок сводки (сдано из N, следующий урок), список чекпоинтов из overview с визуальными состояниями согласно [`docs/ui/ui-requirements.md`](../ui/ui-requirements.md) экран 3.
+- [x] Форма сдачи: модальное окно или inline-панель; поля отчёт и ссылки; отправка `PUT` с телом по контракту; после успеха — обновление данных (revalidate / refetch).
+- [x] Ограничение «сдать только текущий» и блокировка будущих — на клиенте по `sort_order` и статусам из API, без дублирования серверных правил (403 с сервера — обработать).
+- [x] Состояния loading / empty / error; для роли преподавателя на том же маршруте — понятное сообщение или редирект (если не оговорено иначе в сессии).
+
+#### Skills
+
+`shadcn-ui`, `vercel-react-best-practice`, `nextjs-app-router-patterns`, при расхождении с API — `api-design-principles`.
+
+#### Критерии готовности (DoD)
+
+| # | Критерий | Способ проверки |
+|---|----------|-----------------|
+| 1 | Данные кабинета с backend (mock), без заглушки «позже по roadmap» | Вход студентом из сида → открыть «Кабинет студента», сверить с `GET .../progress-overview` |
+| 2 | Сдача урока: `comment` и `submission_links` уходят в `PUT .../progress-records/{checkpoint_id}`; список обновляется | Отправить форму, обновить страницу — статус урока и дата согласованы с API |
+| 3 | Соответствие продуктовым требованиям зоны C | Сверка с [`frontend-requirements.md`](../tech/frontend-requirements.md) §6.3 и [`ui-requirements.md`](../ui/ui-requirements.md) экран 3 |
+| 4 | Линт и сборка | `pnpm lint` / `make frontend-lint`, production build |
+
+**Для агента:** нет прямых вызовов LLM; типы согласованы с OpenAPI при отсутствии расхождений с backend.
+
+#### Артефакты
+
+- `frontend/web/app/(app)/student/page.tsx` — реализация вместо заглушки.
+- Новые: route handler(s) под `/api/v1/...`, компонент(ы) формы/списка, `lib/*-types.ts` при необходимости.
+
+#### Документы задачи
+
+- 📋 [План](impl/frontend/iteration-4-frontend/tasks/task-11-student-cabinet/plan.md)
+- ✅ [Summary](impl/frontend/iteration-4-frontend/tasks/task-11-student-cabinet/summary.md)
+
+---
+
 ### Завершение блока 3 — проверки
 
 
 | Кто              | Что проверить                                                            |
 | ---------------- | ------------------------------------------------------------------------ |
 | **Агент**        | Все страницы работают на данных mock; нет прямых вызовов LLM из браузера |
-| **Пользователь** | Сквозной сценарий: вход → дашборд / лидерборд / чат                      |
+| **Пользователь** | Сквозной сценарий: вход → дашборд / лидерборд / **кабинет студента** / чат |
 | **Команды**      | При новых проверках — расширить `Makefile` (например `frontend-test`)    |
 
 

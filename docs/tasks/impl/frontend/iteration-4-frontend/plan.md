@@ -16,6 +16,7 @@
 | 02 | Backend: данные, эндпоинты, миграции, mock, преподаватель | [task-02](tasks/task-02-backend-api-seed/plan.md) |
 | 03 | Каркас Next.js, вход, layout, чат-каркас, Makefile, бот `/username` | [task-03](tasks/task-03-next-scaffold/plan.md) |
 | 04–08 | См. [`docs/tasks/tasklist-frontend.md`](../../../../tasks/tasklist-frontend.md) | — |
+| 11 | Кабинет студента (зона C): экран прогресса и сдачи — **✅** | [task-11](tasks/task-11-student-cabinet/plan.md) \| [summary](tasks/task-11-student-cabinet/summary.md) |
 
 ## Источники контекста
 
