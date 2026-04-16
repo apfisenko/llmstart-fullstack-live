@@ -26,12 +26,14 @@
 
 | Итерация | Название | Цель | Статус | Tasklist |
 |----------|----------|------|--------|----------|
-| 1 | MVP: Telegram-бот | Рабочий бот с LLM, история в памяти | ✅ Done | [tasklist-bot](tasks/tasklist-bot.md) |
+| 1 | MVP: Telegram-бот | Рабочий бот с LLM, история в памяти | ✅ Done | см. примечание ниже |
 | 2 | Backend API | Полный API: scaffold, LLM, прогресс, поток | ✅ Done | [tasklist-backend](tasks/tasklist-backend.md) |
-| 3 | База данных | PostgreSQL, схема, миграции | 📋 Planned | [tasklist-database](tasks/tasklist-database.md) |
-| 4 | Реализация Frontend | Веб-кабинет студента и преподавателя | 📋 Planned | [tasklist-frontend](tasks/tasklist-frontend.md) |
-| 5 | Интеграция клиентов | Бот и веб работают через backend API | 📋 Planned | [tasklist-bot](tasks/tasklist-bot.md) + [tasklist-frontend](tasks/tasklist-frontend.md) |
-| 6 | Dev&Ops & Production | CI/CD, контейнеризация, production-deploy | 📋 Planned | [tasklist-infrastructure](tasks/tasklist-infrastructure.md) |
+| 3 | База данных | PostgreSQL, схема, миграции | ✅ Done | [tasklist-database](tasks/tasklist-database.md) |
+| 4 | Реализация Frontend | Веб-кабинет студента и преподавателя | ✅ Done | [tasklist-frontend](tasks/tasklist-frontend.md) |
+| 5 | Интеграция клиентов | Бот и веб работают через backend API | 🚧 In Progress | [tasklist-backend](tasks/tasklist-backend.md) (задача 07) + [tasklist-frontend](tasks/tasklist-frontend.md) |
+| 6 | Dev&Ops & Production | CI/CD, контейнеризация, production-deploy | 📋 Planned | см. примечание ниже |
+
+**Примечание к ссылкам:** отдельные файлы `docs/tasks/tasklist-bot.md` и `docs/tasks/tasklist-infrastructure.md` в репозитории пока не ведутся. Итерация **1:** код и сценарии — каталог [`bot/`](../bot/). Итерация **5:** бот как клиент API закрыт в [tasklist-backend](tasks/tasklist-backend.md) (задача **07**); веб — [tasklist-frontend](tasks/tasklist-frontend.md). Итерация **6:** ориентир — появление `tasklist-infrastructure.md`; уже есть базовый CI в [`.github/workflows/`](../.github/workflows/).
 
 ---
 
@@ -50,7 +52,7 @@
 - Конфигурация через `.env`; логирование без текста переписки.
 - Структура `bot/` соответствует конвенциям проекта.
 
-**Связь с tasklist:** [docs/tasks/tasklist-bot.md](tasks/tasklist-bot.md)
+**Связь с tasklist:** отдельного `tasklist-bot.md` нет — ориентир по коду: [`bot/`](../bot/).
 
 **Полезный результат:** участники курса могут задавать вопросы ассистенту в Telegram.
 
@@ -85,7 +87,9 @@
 
 ---
 
-### Итерация 3: База данных
+### Итерация 3: База данных ✅
+
+**Статус по [tasklist-database](tasks/tasklist-database.md):** задачи **01–05** закрыты; итерация 3 считается **завершённой** по факту tasklist (сводный `summary.md` уровня итерации при необходимости — в `docs/tasks/impl/database/iteration-3-database/`).
 
 **Цель:** персистентный слой на PostgreSQL для всего домена API v1: пользователи, потоки, участия, диалоги и сообщения, этапы и записи прогресса; воспроизводимые миграции; локальная инфраструктура (Docker) и начальное наполнение из выгрузки `data/progress-import.v1.json`; документация сценариев «студент / преподаватель → данные» и операционная справка по БД.
 
@@ -108,7 +112,9 @@
 
 ---
 
-### Итерация 4: Реализация Frontend
+### Итерация 4: Реализация Frontend ✅
+
+**Статус по [tasklist-frontend](tasks/tasklist-frontend.md):** задачи **01–08** закрыты (MVP веб-клиента). Задачи **09–10** (голос, Text-to-SQL) **не выполняются** (⛔), зафиксировано в [`docs/tech/technical-debt.md`](tech/technical-debt.md) §«Отложенное развитие» — на цели итерации 4 (студент / преподаватель / чат по API) не влияют.
 
 **Цель:** создать единый веб-клиент с двумя ролями: кабинет студента и интерфейс преподавателя.
 
@@ -129,7 +135,9 @@
 
 ---
 
-### Итерация 5: Интеграция клиентов
+### Итерация 5: Интеграция клиентов 🚧
+
+**Статус:** по коду оба клиента ходят в **`/api/v1/`** (бот — см. [tasklist-backend](tasks/tasklist-backend.md) задача **07** ✅; веб — итерация **4** ✅). Итерация **5** остаётся **в работе**, пока явно не подтверждён сквозной DoD ниже (в т.ч. сценарий «бот → данные в вебе») и не зафиксировано закрытие в отдельном summary при появлении процесса приёмки.
 
 **Цель:** подключить бот и веб к backend API — оба клиента работают через ядро, без собственной логики.
 
@@ -140,15 +148,17 @@
 - Сквозной сценарий «студент фиксирует результат в боте → данные видны в веб-интерфейсе» работает.
 - Клиенты не обращаются к LLM и БД напрямую.
 
-**Связь с tasklist:** [docs/tasks/tasklist-bot.md](tasks/tasklist-bot.md) + [docs/tasks/tasklist-frontend.md](tasks/tasklist-frontend.md)
+**Связь с tasklist:** [docs/tasks/tasklist-backend.md](tasks/tasklist-backend.md) (задача **07**) + [docs/tasks/tasklist-frontend.md](tasks/tasklist-frontend.md)
 
 **Полезный результат:** платформа работает как единая система: один backend, два клиента.
 
-**Артефакты:** `frontend/bot/` (тонкий клиент), обновлённый `frontend/web/`.
+**Артефакты:** [`bot/`](../bot/) (тонкий клиент), [`frontend/web/`](../frontend/web/).
 
 ---
 
 ### Итерация 6: Dev&Ops & Production
+
+**Частично уже есть:** в репозитории настроен [GitHub Actions CI](../.github/workflows/ci.yml) — линт/сборка `frontend/web`, ruff для `bot/` и `backend`, pytest `backend/tests/pg` с сервисом PostgreSQL. Полный DoD итерации (контейнеры всех компонентов, воспроизводимый production-deploy, отдельный tasklist инфраструктуры) — **ещё не закрыт**.
 
 **Цель:** контейнеризовать систему, настроить CI/CD и выполнить production-deploy.
 
@@ -162,7 +172,7 @@
 - Секреты не в репозитории; конфиг из окружения валидируется при старте.
 - Логирование: события уровня системы без текста переписки ([`vision.md §15`](vision.md)).
 
-**Связь с tasklist:** [docs/tasks/tasklist-infrastructure.md](tasks/tasklist-infrastructure.md)
+**Связь с tasklist:** при появлении — `docs/tasks/tasklist-infrastructure.md`; сейчас — CI в [`.github/workflows/`](../.github/workflows/), команды в [`Makefile`](../Makefile) и [`README.md`](../README.md).
 
 **Полезный результат:** система работает в продакшне; новый разработчик поднимает окружение по документации.
 
