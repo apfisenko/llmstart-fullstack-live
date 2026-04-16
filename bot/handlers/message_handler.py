@@ -5,6 +5,7 @@ from aiogram.enums import ChatAction, ChatType
 from aiogram.types import Message
 
 from bot.services.backend_assistant import BackendAssistantService
+from bot.state.pending_dev_username import clear_waiting_username, is_waiting_username
 from bot.utils.logger import hash_chat_id
 
 logger = logging.getLogger(__name__)
@@ -33,6 +34,12 @@ def build_message_router(llm: BackendAssistantService) -> Router:
         chat_id = message.chat.id
         ch = hash_chat_id(chat_id)
         text = message.text
+        if is_waiting_username(chat_id):
+            clear_waiting_username(chat_id)
+            logger.info("message dev_username_reply chat_hash=%s len=%s", ch, len(text))
+            reply = await llm.lookup_dev_session(text, ch)
+            await message.answer(reply)
+            return
         logger.info("message text chat_hash=%s len=%s", ch, len(text))
         try:
             await message.bot.send_chat_action(chat_id=chat_id, action=ChatAction.TYPING)

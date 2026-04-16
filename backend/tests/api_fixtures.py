@@ -54,7 +54,9 @@ async def seed_data(engine):
         session.add(User(id=USER_ID_A, name="Student A", telegram_username="student_a"))
         session.add(User(id=USER_ID_B, name="Student B"))
         session.add(User(id=USER_ID_C, name="Extra"))
-        session.add(User(id=USER_ID_TEACHER, name="Teacher"))
+        session.add(
+            User(id=USER_ID_TEACHER, name="Teacher", telegram_username="fixture_teacher"),
+        )
         session.add(Cohort(id=COHORT_ID, title="Test cohort", code="test"))
         await session.flush()
         session.add(

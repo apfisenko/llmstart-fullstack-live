@@ -2,7 +2,8 @@
 	backend-test backend-dev \
 	backend-lint backend-typecheck \
 	db-up db-down db-reset db-migrate db-migrate-test-db db-migrate-all \
-	db-test-create db-migrate-test db-shell db-status migrate-backend migrate-backend-test
+	db-test-create db-migrate-test db-shell db-status migrate-backend migrate-backend-test \
+	frontend-install frontend-dev frontend-lint frontend-build
 
 # Команда Compose: по умолчанию локальный `docker compose`.
 # Если Docker доступен только в WSL (в PowerShell/CMD `docker` не находится), задайте, например:
@@ -107,3 +108,16 @@ db-shell:
 db-status:
 	$(DOCKER_COMPOSE) ps -a
 	@echo "--- Проверьте, что у сервиса postgres в PORTS есть 0.0.0.0:5432->5432/tcp"
+
+# Веб-клиент (Next.js): см. frontend/web/.env.example и README.
+frontend-install:
+	cd frontend/web && pnpm install
+
+frontend-dev:
+	cd frontend/web && pnpm dev
+
+frontend-lint:
+	cd frontend/web && pnpm lint
+
+frontend-build:
+	cd frontend/web && pnpm build

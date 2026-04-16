@@ -40,7 +40,7 @@ class AuthService:
                     "membership_id": m.id,
                     "cohort_id": m.cohort_id,
                     "cohort_title": cohort.title if cohort else None,
-                    "role": str(m.role),
+                    "role": m.role.value,
                 }
             )
             if web_dialogue_id is None and m.role == MembershipRole.student:

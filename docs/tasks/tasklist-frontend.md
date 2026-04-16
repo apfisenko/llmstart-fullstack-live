@@ -26,6 +26,7 @@
 - 📋 Planned — запланирован
 - 🚧 In Progress — в работе
 - ✅ Done — завершён
+- ⛔ Cancelled — отменена (не выполняется)
 
 ## Документы итерации
 
@@ -59,14 +60,14 @@
 | ------ | ----------------------------------------------------------------------------------------- | ---------------------- | ------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | 01     | Требования к UI (4 зоны), стиль, вход по Telegram username, проектирование API под экраны | [1](#block-frontend-1) | ✅      | [план](impl/frontend/iteration-4-frontend/tasks/task-01-ui-api-contracts/plan.md) | [summary](impl/frontend/iteration-4-frontend/tasks/task-01-ui-api-contracts/summary.md)   |
 | 02     | Backend: данные, новые endpoint'ы, миграции mock + преподаватель @akozhin, контракты      | [1](#block-frontend-1) | ✅      | [план](impl/frontend/iteration-4-frontend/tasks/task-02-backend-api-seed/plan.md) | [summary](impl/frontend/iteration-4-frontend/tasks/task-02-backend-api-seed/summary.md)   |
-| 03     | Каркас Next.js + shadcn + тема + вход + layout + чат-виджет + Makefile/README             | [2](#block-frontend-2) | 📋     | [план](impl/frontend/iteration-4-frontend/tasks/task-03-next-scaffold/plan.md) | [summary](impl/frontend/iteration-4-frontend/tasks/task-03-next-scaffold/summary.md)         |
-| 04     | Панель преподавателя (KPI, график, вопросы, сдачи, матрица)                               | [3](#block-frontend-3) | 📋     | [план](impl/frontend/iteration-4-frontend/tasks/task-04-teacher-dashboard/plan.md) | [summary](impl/frontend/iteration-4-frontend/tasks/task-04-teacher-dashboard/summary.md) |
-| 05     | Лидерборд: таблица / scatter plot                                                         | [3](#block-frontend-3) | 📋     | [план](impl/frontend/iteration-4-frontend/tasks/task-05-leaderboard/plan.md) | [summary](impl/frontend/iteration-4-frontend/tasks/task-05-leaderboard/summary.md)             |
-| 06     | Глобальный чат (плавающая панель, история)                                                | [3](#block-frontend-3) | 📋     | [план](impl/frontend/iteration-4-frontend/tasks/task-06-chat-floating/plan.md) | [summary](impl/frontend/iteration-4-frontend/tasks/task-06-chat-floating/summary.md)         |
-| 07     | Чат в основной области (меню «Чат», история)                                              | [3](#block-frontend-3) | 📋     | [план](impl/frontend/iteration-4-frontend/tasks/task-07-chat-main-route/plan.md) | [summary](impl/frontend/iteration-4-frontend/tasks/task-07-chat-main-route/summary.md)     |
-| 08     | Ревью качества frontend (best practices, критические исправления)                         | [4](#block-frontend-4) | 📋     | [план](impl/frontend/iteration-4-frontend/tasks/task-08-frontend-quality/plan.md) | [summary](impl/frontend/iteration-4-frontend/tasks/task-08-frontend-quality/summary.md)   |
-| 09     | Голосовой режим чата (веб + Telegram-бот)                                                 | [5](#block-frontend-5) | 📋     | [план](impl/frontend/iteration-4-frontend/tasks/task-09-voice-chat/plan.md) | [summary](impl/frontend/iteration-4-frontend/tasks/task-09-voice-chat/summary.md)               |
-| 10     | Ответы на вопросы по данным БД (Text-to-SQL): варианты, реализация, тест-сценарии         | [5](#block-frontend-5) | 📋     | [план](impl/frontend/iteration-4-frontend/tasks/task-10-text-to-sql/plan.md) | [summary](impl/frontend/iteration-4-frontend/tasks/task-10-text-to-sql/summary.md)             |
+| 03     | Каркас Next.js + shadcn + тема + вход + layout + чат-виджет + Makefile/README             | [2](#block-frontend-2) | ✅      | [план](impl/frontend/iteration-4-frontend/tasks/task-03-next-scaffold/plan.md) | [summary](impl/frontend/iteration-4-frontend/tasks/task-03-next-scaffold/summary.md)         |
+| 04     | Панель преподавателя (KPI, график, вопросы, сдачи, матрица)                               | [3](#block-frontend-3) | ✅      | [план](impl/frontend/iteration-4-frontend/tasks/task-04-teacher-dashboard/plan.md) | [summary](impl/frontend/iteration-4-frontend/tasks/task-04-teacher-dashboard/summary.md)   |
+| 05     | Лидерборд: таблица / scatter plot                                                         | [3](#block-frontend-3) | ✅      | [план](impl/frontend/iteration-4-frontend/tasks/task-05-leaderboard/plan.md) | [summary](impl/frontend/iteration-4-frontend/tasks/task-05-leaderboard/summary.md)             |
+| 06     | Глобальный чат (плавающая панель, история)                                                | [3](#block-frontend-3) | ✅      | [план](impl/frontend/iteration-4-frontend/tasks/task-06-chat-floating/plan.md) | [summary](impl/frontend/iteration-4-frontend/tasks/task-06-chat-floating/summary.md)         |
+| 07     | Чат в основной области (меню «Чат», история)                                              | [3](#block-frontend-3) | ✅      | [план](impl/frontend/iteration-4-frontend/tasks/task-07-chat-main-route/plan.md) | [summary](impl/frontend/iteration-4-frontend/tasks/task-07-chat-main-route/summary.md)     |
+| 08     | Ревью качества frontend (best practices, критические исправления)                         | [4](#block-frontend-4) | ✅      | [план](impl/frontend/iteration-4-frontend/tasks/task-08-frontend-quality/plan.md) | [summary](impl/frontend/iteration-4-frontend/tasks/task-08-frontend-quality/summary.md)   |
+| 09     | Голосовой режим чата (веб + Telegram-бот)                                                 | [5](#block-frontend-5) | ⛔     | [план](impl/frontend/iteration-4-frontend/tasks/task-09-voice-chat/plan.md) | [summary](impl/frontend/iteration-4-frontend/tasks/task-09-voice-chat/summary.md)               |
+| 10     | Ответы на вопросы по данным БД (Text-to-SQL): веб + бот через backend; после плана — **не в работе** (усложнение), бэклог | [5](#block-frontend-5) | ⛔     | [план](impl/frontend/iteration-4-frontend/tasks/task-10-text-to-sql/plan.md) | [summary](impl/frontend/iteration-4-frontend/tasks/task-10-text-to-sql/summary.md)             |
 
 
 ---
@@ -180,7 +181,7 @@
 
 ## Блок 2 — Задача 03: каркас frontend-проекта
 
-### Задача 03: Каркас Next.js + тема + вход + layout 📋
+### Задача 03: Каркас Next.js + тема + вход + layout ✅
 
 #### Цель
 
@@ -226,7 +227,7 @@
 
 ## Блок 3 — Задачи 04–07: экраны и чат
 
-### Задача 04: Панель преподавателя 📋
+### Задача 04: Панель преподавателя ✅
 
 #### Цель
 
@@ -262,12 +263,12 @@
 
 #### Документы задачи
 
-- 📋 [План](impl/frontend/iteration-4-frontend/tasks/task-04-teacher-dashboard/plan.md)
-- 📝 [Summary](impl/frontend/iteration-4-frontend/tasks/task-04-teacher-dashboard/summary.md)
+- ✅ [План](impl/frontend/iteration-4-frontend/tasks/task-04-teacher-dashboard/plan.md)
+- ✅ [Summary](impl/frontend/iteration-4-frontend/tasks/task-04-teacher-dashboard/summary.md)
 
 ---
 
-### Задача 05: Лидерборд 📋
+### Задача 05: Лидерборд ✅
 
 #### Цель
 
@@ -301,12 +302,12 @@
 
 #### Документы задачи
 
-- 📋 [План](impl/frontend/iteration-4-frontend/tasks/task-05-leaderboard/plan.md)
-- 📝 [Summary](impl/frontend/iteration-4-frontend/tasks/task-05-leaderboard/summary.md)
+- ✅ [План](impl/frontend/iteration-4-frontend/tasks/task-05-leaderboard/plan.md)
+- ✅ [Summary](impl/frontend/iteration-4-frontend/tasks/task-05-leaderboard/summary.md)
 
 ---
 
-### Задача 06: Глобальный чат (плавающая панель) 📋
+### Задача 06: Глобальный чат (плавающая панель) ✅
 
 #### Цель
 
@@ -335,12 +336,12 @@
 
 #### Документы задачи
 
-- 📋 [План](impl/frontend/iteration-4-frontend/tasks/task-06-chat-floating/plan.md)
-- 📝 [Summary](impl/frontend/iteration-4-frontend/tasks/task-06-chat-floating/summary.md)
+- ✅ [План](impl/frontend/iteration-4-frontend/tasks/task-06-chat-floating/plan.md)
+- ✅ [Summary](impl/frontend/iteration-4-frontend/tasks/task-06-chat-floating/summary.md)
 
 ---
 
-### Задача 07: Чат в основной области (меню «Чат») 📋
+### Задача 07: Чат в основной области (меню «Чат») ✅
 
 #### Цель
 
@@ -368,8 +369,8 @@
 
 #### Документы задачи
 
-- 📋 [План](impl/frontend/iteration-4-frontend/tasks/task-07-chat-main-route/plan.md)
-- 📝 [Summary](impl/frontend/iteration-4-frontend/tasks/task-07-chat-main-route/summary.md)
+- ✅ [План](impl/frontend/iteration-4-frontend/tasks/task-07-chat-main-route/plan.md)
+- ✅ [Summary](impl/frontend/iteration-4-frontend/tasks/task-07-chat-main-route/summary.md)
 
 ---
 
@@ -389,7 +390,9 @@
 
 ## Блок 4 — Задача 08: качество frontend
 
-### Задача 08: Ревью качества кода frontend 📋
+### Задача 08: Ревью качества кода frontend ✅
+
+**Фактический статус:** ревью выполнено, замечания приоритезированы в [`docs/tech/technical-debt.md`](../tech/technical-debt.md). Устранение пунктов из этого файла **не сделано** — запланировано отдельно, позже.
 
 #### Цель
 
@@ -409,7 +412,7 @@
 
 **Для агента:**
 
-- Список проверок и результат в [summary](impl/frontend/iteration-4-frontend/tasks/task-08-frontend-quality/summary.md); критические пункты закрыты или заведены как отдельные задачи с явной пометкой.
+- Список проверок и результат в [summary](impl/frontend/iteration-4-frontend/tasks/task-08-frontend-quality/summary.md); критические пункты закрыты или заведены как отдельные задачи с явной пометкой (бэклог: [`technical-debt.md`](../tech/technical-debt.md)).
 
 **Для пользователя:**
 
@@ -426,73 +429,29 @@
 
 ## Блок 5 — Задачи 09–10: расширения
 
-### Задача 09: Голосовой режим чата 📋
+### Задача 09: Голосовой режим чата ⛔
 
-#### Цель
+**Статус:** отменена после планирования: избыточное техническое усложнение (веб: браузерные API / права / совместимость; бот и ядро: STT, лимиты, контракты, интеграции). Реализация не ведётся; приоритет не подтверждён.
 
-Добавить голосовой ввод/вывод (или согласованный MVP) для чата **в веб-клиенте** и **в Telegram-боте**.
-
-#### Состав работ
-
-- Уточнить продуктовый сценарий (только ввод / также озвучивание ответа); выбрать Web Speech API, сторонний STT/TTS или Telegram voice — зафиксировать в `plan.md` задачи.
-- Веб: интеграция с UI чата (задачи 06–07); обработка разрешений браузера и ошибок.
-- Бот: обработка голосовых сообщений в `bot/` (тонкий клиент → backend при необходимости).
-- При необходимости — новые/изменённые endpoint'ы в backend и обновление `[docs/tech/api-contracts.md](../tech/api-contracts.md)`.
-- Актуализировать `[docs/integrations.md](../integrations.md)` при новых потоках аудио.
-
-#### Skills
-
-`sharp-edges`, `api-design-principles` (если меняется API).
-
-#### Критерии готовности (DoD)
-
-**Для агента:**
-
-- Документирован поток аудио web и Telegram; нет обхода ядра для бизнес-правил.
-
-**Для пользователя:**
-
-- Веб: в PowerShell запустить клиент и backend, проверить голосовой сценарий в поддерживаемом браузере.
-- Бот: отправить voice в Telegram, получить осмысленный ответ по согласованному сценарию.
+Исходное описание цели и состава работ сохранено в архивном виде в [плане задачи](impl/frontend/iteration-4-frontend/tasks/task-09-voice-chat/plan.md) и [summary](impl/frontend/iteration-4-frontend/tasks/task-09-voice-chat/summary.md).
 
 #### Документы задачи
 
-- 📋 [План](impl/frontend/iteration-4-frontend/tasks/task-09-voice-chat/plan.md)
-- 📝 [Summary](impl/frontend/iteration-4-frontend/tasks/task-09-voice-chat/summary.md)
+- ⛔ [План / решение об отмене](impl/frontend/iteration-4-frontend/tasks/task-09-voice-chat/plan.md)
+- ⛔ [Summary](impl/frontend/iteration-4-frontend/tasks/task-09-voice-chat/summary.md)
 
 ---
 
-### Задача 10: Ответы на вопросы по данным БД (Text-to-SQL) 📋
+### Задача 10: Ответы на вопросы по данным БД (Text-to-SQL) ⛔
 
-#### Цель
+**Статус:** не выполняется после анализа плана: избыточное усложнение (безопасный Text-to-SQL, read-only/allowlist, ADR, эксплуатация, единый pipeline для веба и бота). Реализация не ведётся; тема остаётся на дальнейшее развитие — см. [`docs/tech/technical-debt.md`](../tech/technical-debt.md) §«Отложенное развитие».
 
-Позволить ассистенту (через backend) отвечать на вопросы, опираясь на данные PostgreSQL, с безопасной архитектурой (Text-to-SQL или эквивалент).
-
-#### Состав работ
-
-- Проработать и зафиксировать варианты (ограниченный SQL-генератор, RAG по схеме, read-only роль, allowlist таблиц, лимиты) — `**docs/adr/`** или `docs/tech/<имя>.md` по согласованию.
-- Реализовать в `**backend/**` согласно выбранной архитектуре; фронт — только отображение/команда, если требуется отдельный UI.
-- Подготовить **сценарии для тестирования** (ручные и/или автоматические): типовые вопросы, негативные случаи, запрет на разрушительные запросы.
-- Обновить `[docs/tech/api-contracts.md](../tech/api-contracts.md)`, при необходимости `[docs/data-model.md](../data-model.md)` и OpenAPI.
-
-#### Skills
-
-`api-design-principles`, `modern-python`, `postgresql-table-design`.
-
-#### Критерии готовности (DoD)
-
-**Для агента:**
-
-- Архитектурное решение записано; реализация не выполняет опасные запросы вне политики; тест-сценарии приложены к summary или `backend/tests/`.
-
-**Для пользователя:**
-
-- Прогнать сценарии из документации задачи; убедиться, что ответы соответствуют данным в БД и не выходят за рамки политики.
+Исходная цель, варианты архитектуры и состав работ сохранены в [плане задачи](impl/frontend/iteration-4-frontend/tasks/task-10-text-to-sql/plan.md); итог закрытия — в [summary](impl/frontend/iteration-4-frontend/tasks/task-10-text-to-sql/summary.md).
 
 #### Документы задачи
 
-- 📋 [План](impl/frontend/iteration-4-frontend/tasks/task-10-text-to-sql/plan.md)
-- 📝 [Summary](impl/frontend/iteration-4-frontend/tasks/task-10-text-to-sql/summary.md)
+- ⛔ [План (архив)](impl/frontend/iteration-4-frontend/tasks/task-10-text-to-sql/plan.md)
+- ⛔ [Summary](impl/frontend/iteration-4-frontend/tasks/task-10-text-to-sql/summary.md)
 
 ---
 
@@ -501,8 +460,8 @@
 
 | Кто              | Что проверить                                                                        |
 | ---------------- | ------------------------------------------------------------------------------------ |
-| **Агент**        | Задачи 09–10 не ломают принцип «ядро — backend»; секреты и ключи только из окружения |
-| **Пользователь** | Приёмочные сценарии из summary задач 09–10                                           |
+| **Агент**        | Задачи 09–10 отменены; при возврате к теме — заново оценить roadmap, ADR и [`technical-debt.md`](../tech/technical-debt.md) |
+| **Пользователь** | —                                                                                    |
 | **Команды**      | Новые цели Makefile/README при появлении отдельных сервисов или e2e-проверок         |
 
 

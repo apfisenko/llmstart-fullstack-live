@@ -74,7 +74,11 @@ flowchart LR
 .\tasks.ps1 test-backend
 .\tasks.ps1 db-up          # compose + миграции на llmstart и llmstart_test
 # при уже запущенном Postgres только основная БД: .\tasks.ps1 db-migrate
+.\tasks.ps1 frontend-install   # зависимости Next.js (frontend/web)
+.\tasks.ps1 frontend-dev       # веб на http://127.0.0.1:3000 (нужен pnpm)
 ```
+
+Нужен **[pnpm](https://pnpm.io/)** и **Node.js LTS** для `frontend/web/`. Файл окружения веба: скопируйте [`frontend/web/.env.example`](frontend/web/.env.example) → **`frontend/web/.env.local`**, задайте **`BACKEND_ORIGIN`**. Если в **`backend/.env`** включён **`BACKEND_API_CLIENT_TOKEN`**, продублируйте то же значение во **`frontend/web/.env.local`** — иначе для входа через веб токен не нужен. Затем поднимите backend и откройте страницу входа.
 
 После полного `alembic upgrade head` ревизия **`0007`** (если ещё не применена) создаёт демо-поток с `cohorts.code = demo_frontend_mvp`: преподаватель **`telegram_username` akozhin**, **`telegram_user_id` 162684825**, студенты `demo_student_alpha` / `beta` / `gamma`, чекпоинты (в т.ч. ДЗ), прогресс и реплики в диалогах для KPI и веб-экранов.
 
@@ -148,6 +152,8 @@ uv run uvicorn app.main:app --host 127.0.0.1 --port 8000
 ### Telegram-бот
 
 Бот ходит только в **backend API** (LLM на стороне ядра). **Запуск** достаточно с `TELEGRAM_TOKEN` и поднятым backend. **`COHORT_ID` и `MEMBERSHIP_ID` не обязательны:** в этом случае используется **guest-режим** (`POST /api/v1/assistant/guest/*`) — диалог в памяти процесса backend, без строк в БД; сценарий позже можно сменить на поток/membership. Если оба UUID заданы и данные есть в БД, запросы идут в основной контракт `.../cohorts/{id}/dialogues/messages` с персистентностью.
+
+Проверка **Telegram username** через тот же контракт, что и веб-вход: команды **`/username имя`** (без пробелов в аргументе) и **`/login`** (бот попросит ввести username следующим сообщением). Если на backend включён Bearer, в корневом `.env` бота задайте **`BACKEND_API_CLIENT_TOKEN`** (как для остальных вызовов API).
 
 **Локально (PostgreSQL):** после **`make db-up`** и **`make migrate-backend`** выполните демо-вставки в БД (например **`make db-shell`** или клиент к `DATABASE_URL`). Подставьте свои UUID в `.env` или оставьте эти и скопируйте в `COHORT_ID` / `MEMBERSHIP_ID`:
 

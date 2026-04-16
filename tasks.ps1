@@ -374,6 +374,47 @@ function Task-DbStatus {
     }
 }
 
+function Assert-PnpmInPath {
+    if (-not (Get-Command pnpm -ErrorAction SilentlyContinue)) {
+        throw "pnpm не найден в PATH. Установите Node.js LTS и включите pnpm (например corepack enable pnpm)."
+    }
+}
+
+function Invoke-FrontendWebPnpm {
+    param([string[]] $PnpmArgs)
+    Assert-PnpmInPath
+    $web = Join-Path $RepoRoot "frontend\web"
+    if (-not (Test-Path -LiteralPath $web)) {
+        throw "Каталог не найден: $web"
+    }
+    Push-Location $web
+    try {
+        & pnpm @PnpmArgs
+        if ($LASTEXITCODE -ne 0 -and $null -ne $LASTEXITCODE) {
+            exit $LASTEXITCODE
+        }
+    }
+    finally {
+        Pop-Location
+    }
+}
+
+function Task-FrontendInstall {
+    Invoke-FrontendWebPnpm @("install")
+}
+
+function Task-FrontendDev {
+    Invoke-FrontendWebPnpm @("dev")
+}
+
+function Task-FrontendLint {
+    Invoke-FrontendWebPnpm @("lint")
+}
+
+function Task-FrontendBuild {
+    Invoke-FrontendWebPnpm @("build")
+}
+
 function Show-Help {
     # Без @" "@: в Windows PowerShell 5.1 обратные кавычки/`$ внутри расширяемой here-string ломают разбор.
     @(
@@ -402,6 +443,10 @@ function Show-Help {
         '  db-migrate-test, migrate-backend-test'
         '                          db-migrate-all + pytest tests/pg'
         '  db-shell                psql in postgres container'
+        '  frontend-install        pnpm install в frontend/web'
+        '  frontend-dev            pnpm dev (Next.js)'
+        '  frontend-lint           pnpm lint'
+        '  frontend-build          pnpm build'
         ''
         'Env: DOCKER_COMPOSE, POSTGRES_*, POSTGRES_TEST_DB, DATABASE_URL, TEST_DATABASE_URL (see Makefile).'
         ''
@@ -431,6 +476,10 @@ switch -Regex ($Task.ToLowerInvariant()) {
     "^(db-migrate-test|migrate-backend-test)$" { Task-DbMigrateTest }
     "^(db-shell)$" { Task-DbShell }
     "^(db-status)$" { Task-DbStatus }
+    "^(frontend-install)$" { Task-FrontendInstall }
+    "^(frontend-dev)$" { Task-FrontendDev }
+    "^(frontend-lint)$" { Task-FrontendLint }
+    "^(frontend-build)$" { Task-FrontendBuild }
     "^(help|-h|--help|\?)$" { Show-Help }
     default {
         Write-Host "Unknown target: $Task" -ForegroundColor Red

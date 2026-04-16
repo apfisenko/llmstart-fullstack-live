@@ -15,6 +15,7 @@ from tests.constants import (
     OTHER_MEMBERSHIP_ID,
     TEACHER_MEMBERSHIP_ID,
     USER_ID_A,
+    USER_ID_TEACHER,
 )
 
 
@@ -440,6 +441,21 @@ async def test_post_auth_dev_session_ok(client):
     data = r.json()
     assert data["user_id"] == str(USER_ID_A)
     assert any(m["membership_id"] == str(MEMBERSHIP_ID) for m in data["memberships"])
+    for m in data["memberships"]:
+        assert m["role"] in ("student", "teacher")
+        assert "MembershipRole" not in m["role"]
+
+
+async def test_post_auth_dev_session_teacher_role_value(client):
+    r = await client.post(
+        "/api/v1/auth/dev-session",
+        json={"telegram_username": "fixture_teacher"},
+    )
+    assert r.status_code == 200
+    data = r.json()
+    assert data["user_id"] == str(USER_ID_TEACHER)
+    assert len(data["memberships"]) == 1
+    assert data["memberships"][0]["role"] == "teacher"
 
 
 async def test_post_auth_dev_session_not_found(client):

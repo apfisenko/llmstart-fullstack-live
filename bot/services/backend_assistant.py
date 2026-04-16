@@ -107,6 +107,59 @@ class BackendAssistantService:
 
         return self._map_error_response(response, ch)
 
+    async def lookup_dev_session(self, telegram_username: str, ch: str) -> str:
+        """POST /api/v1/auth/dev-session — только отображение; бизнес-логика на backend."""
+        token = self._config.backend_api_client_token.strip()
+        if not token:
+            logger.warning("dev_session_no_client_token chat_hash=%s", ch)
+            return "Не задан BACKEND_API_CLIENT_TOKEN для запросов к API."
+
+        raw = telegram_username.strip().lstrip("@")
+        if not raw:
+            return "Username пустой."
+
+        body = {"telegram_username": raw}
+        try:
+            response = await self._client.post("/api/v1/auth/dev-session", json=body)
+        except httpx.RequestError:
+            logger.exception("dev_session_request_error chat_hash=%s", ch)
+            return "Не удалось связаться с сервером."
+
+        if response.status_code == 404:
+            logger.info("dev_session_not_found chat_hash=%s username_len=%s", ch, len(raw))
+            return "Пользователь с таким username не найден в базе."
+        if response.status_code == 401:
+            logger.warning("dev_session_unauthorized chat_hash=%s", ch)
+            return "Нет доступа к API (проверьте токен клиента)."
+        if not response.is_success:
+            return self._map_error_response(response, ch)
+
+        try:
+            data = response.json()
+        except ValueError:
+            logger.error("dev_session_bad_json chat_hash=%s", ch)
+            return "Некорректный ответ сервера."
+
+        memberships = data.get("memberships") or []
+        if not isinstance(memberships, list) or len(memberships) == 0:
+            return "У пользователя нет участий в потоках."
+
+        lines = ["Контекст по username (dev-session):"]
+        display = data.get("display_name")
+        if display:
+            lines.append(f"Имя: {display}")
+        lines.append(f"Участий: {len(memberships)}")
+        for item in memberships[:8]:
+            if not isinstance(item, dict):
+                continue
+            role = item.get("role", "?")
+            title = item.get("cohort_title") or "—"
+            lines.append(f"· {role}: {title}")
+        if len(memberships) > 8:
+            lines.append("…")
+        lines.append("Веб-кабинет: см. README (frontend/web), вход по тому же username.")
+        return "\n".join(lines)
+
     async def reset_history(self, chat_id: int) -> None:
         ch = hash_chat_id(chat_id)
         if not self._backend_ids_configured():

@@ -22,8 +22,8 @@ flowchart TB
   end
   subgraph ours["Наша система"]
     BE["Backend"]
-    BOT["frontend/bot"]
-    WEB["frontend/web"]
+    BOT["bot/ (Telegram)"]
+    WEB["frontend/web (Next.js)"]
   end
   BOT <-->|HTTPS| TG
   WEB -->|HTTPS| BE

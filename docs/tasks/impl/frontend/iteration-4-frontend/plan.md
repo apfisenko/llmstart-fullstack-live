@@ -14,7 +14,8 @@
 |---|--------|------|
 | 01 | Требования к UI (зоны A–D), стиль, вход по Telegram username, контракты API | [task-01](tasks/task-01-ui-api-contracts/plan.md) |
 | 02 | Backend: данные, эндпоинты, миграции, mock, преподаватель | [task-02](tasks/task-02-backend-api-seed/plan.md) |
-| 03–08 | См. [`docs/tasks/tasklist-frontend.md`](../../../../tasks/tasklist-frontend.md) | — |
+| 03 | Каркас Next.js, вход, layout, чат-каркас, Makefile, бот `/username` | [task-03](tasks/task-03-next-scaffold/plan.md) |
+| 04–08 | См. [`docs/tasks/tasklist-frontend.md`](../../../../tasks/tasklist-frontend.md) | — |
 
 ## Источники контекста
 
