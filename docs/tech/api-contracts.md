@@ -68,7 +68,7 @@
 ## Идентификация (MVP)
 
 - Заголовок: `Authorization: Bearer <token>` (схема `bearerAuth` в OpenAPI).
-- На MVP токен — общий секрет клиента (бот/веб) из окружения или заглушка под будущий JWT; детали — в реализации backend и `.env.example`.
+- На MVP токен — общий секрет клиента (бот/веб) из окружения или заглушка под будущий JWT; детали — в реализации backend и [`backend/.env.example`](../../backend/.env.example) / [`bot/.env.example`](../../bot/.env.example).
 - **Веб:** после успешного `POST /api/v1/auth/dev-session` клиент передаёт в запросах тот же Bearer и явные `membership_id` / `viewer_membership_id` / `cohort_id` в путях и query, как для бота; отдельного JWT для пользователя нет.
 - Сервер проверяет соответствие `membership_id` / `dialogue_id` и `cohort_id`, роли (студент / преподаватель).
 - **401** — нет или неверный токен; **403** — операция запрещена для роли или ресурса.

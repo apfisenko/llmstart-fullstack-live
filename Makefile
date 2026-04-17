@@ -1,4 +1,4 @@
-.PHONY: install run lint format test test-backend \
+.PHONY: install run lint format test test-backend ci-check \
 	backend-test backend-dev \
 	backend-lint backend-typecheck \
 	db-up db-down db-reset db-migrate db-migrate-test-db db-migrate-all \
@@ -33,12 +33,15 @@ run:
 lint:
 	uv run ruff check bot
 	uv run ruff format --check bot
-	cd backend && uv run ruff check app tests && uv run ruff format --check app tests
+	cd backend && uv run --extra dev ruff check app tests && uv run --extra dev ruff format --check app tests
+
+# Статическая часть CI: ruff + ESLint + next build (нужны зависимости: make install; для фронта — make frontend-install).
+ci-check: lint frontend-lint frontend-build
 
 format:
 	uv run ruff format bot
 	uv run ruff check --fix bot
-	cd backend && uv run ruff format app tests && uv run ruff check --fix app tests
+	cd backend && uv run --extra dev ruff format app tests && uv run --extra dev ruff check --fix app tests
 
 test: test-backend
 

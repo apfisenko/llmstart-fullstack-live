@@ -57,7 +57,7 @@ jobs:
         run: |
           uv run ruff check bot
           uv run ruff format --check bot
-          cd backend && uv run ruff check app tests && uv run ruff format --check app tests
+          cd backend && uv run --extra dev ruff check app tests && uv run --extra dev ruff format --check app tests
 
       - name: Test (PostgreSQL, tests/pg)
         run: cd backend && uv run pytest tests/pg

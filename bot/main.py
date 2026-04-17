@@ -22,7 +22,7 @@ async def main() -> None:
         if config.proxy_url.strip():
             logger.warning(
                 "PROXY_URL задан — все запросы бота к Telegram API идут через прокси; "
-                "при таймаутах очистите переменную в .env, если прокси не нужен."
+                "при таймаутах очистите переменную в bot/.env, если прокси не нужен."
             )
         session = AiohttpSession(proxy=config.proxy_url or None)
         bot = Bot(token=config.telegram_token, session=session)

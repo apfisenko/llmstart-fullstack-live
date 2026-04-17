@@ -214,22 +214,23 @@ function Task-Install {
     Invoke-Backend @("uv", "sync", "--extra", "dev")
 }
 
-function Task-Run {
+function Task-BotDev {
     uv run python -m bot.main
 }
 
 function Task-Lint {
     uv run ruff check bot
     uv run ruff format --check bot
-    Invoke-Backend @("uv", "run", "ruff", "check", "app", "tests")
-    Invoke-Backend @("uv", "run", "ruff", "format", "--check", "app", "tests")
+    # backend: ruff только в optional-dependencies dev — нужен --extra dev, иначе «Failed to spawn: ruff»
+    Invoke-Backend @("uv", "run", "--extra", "dev", "ruff", "check", "app", "tests")
+    Invoke-Backend @("uv", "run", "--extra", "dev", "ruff", "format", "--check", "app", "tests")
 }
 
 function Task-Format {
     uv run ruff format bot
     uv run ruff check --fix bot
-    Invoke-Backend @("uv", "run", "ruff", "format", "app", "tests")
-    Invoke-Backend @("uv", "run", "ruff", "check", "--fix", "app", "tests")
+    Invoke-Backend @("uv", "run", "--extra", "dev", "ruff", "format", "app", "tests")
+    Invoke-Backend @("uv", "run", "--extra", "dev", "ruff", "check", "--fix", "app", "tests")
 }
 
 function Task-TestBackend {
@@ -415,13 +416,20 @@ function Task-FrontendBuild {
     Invoke-FrontendWebPnpm @("build")
 }
 
+function Task-CiCheck {
+    Task-Lint
+    Task-FrontendLint
+    Task-FrontendBuild
+}
+
 function Show-Help {
     # Без @" "@: в Windows PowerShell 5.1 обратные кавычки/`$ внутри расширяемой here-string ломают разбор.
     @(
         'Usage: .\tasks.ps1 <target>'
         ''
         '  install                 uv sync (repo root + backend)'
-        '  run                     bot: uv run python -m bot.main'
+        '  bot-dev                 бот: uv run python -m bot.main (секреты в bot/.env; шаблон bot/.env.example)'
+        '  ci-check                ruff + frontend-lint + frontend-build (статика как в CI; нужен frontend-install)'
         '  lint, backend-lint      ruff (bot + backend)'
         '  format                  ruff format + fix'
         '  test, test-backend, backend-test, test-all'
@@ -457,7 +465,8 @@ function Show-Help {
 
 switch -Regex ($Task.ToLowerInvariant()) {
     "^(install)$" { Task-Install }
-    "^(run)$" { Task-Run }
+    "^(bot-dev)$" { Task-BotDev }
+    "^(ci-check)$" { Task-CiCheck }
     "^(lint|backend-lint)$" { Task-Lint }
     "^(format)$" { Task-Format }
     "^(test|test-backend|backend-test|test-all)$" { Task-TestBackend }

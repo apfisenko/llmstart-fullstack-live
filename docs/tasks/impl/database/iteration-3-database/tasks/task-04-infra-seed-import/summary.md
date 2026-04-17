@@ -6,7 +6,7 @@
 - **[`Makefile`](../../../../../../../Makefile):** `db-up` (`docker compose up -d --wait`), `db-down`, `db-reset` (down `-v` + up + миграции), `db-migrate`, `db-shell`; `DATABASE_URL` по умолчанию под compose; **`migrate-backend`** вызывает ту же логику, что **`db-migrate`**.
 - **[`backend/migrations/versions/0003_seed_course_progress.py`](../../../../../../../backend/migrations/versions/0003_seed_course_progress.py):** импорт из [`data/progress-import.v1.json`](../../../../../../../data/progress-import.v1.json); идемпотентность по `cohorts.title`; `downgrade` удаляет данные сида и пользователей по списку `telegram_user_id` из JSON.
 - **[`docs/tech/db-tooling-guide.md`](../../../../../../tech/db-tooling-guide.md):** разделы Docker, make, описание ревизии 0003, проверочные SQL после `db-reset`.
-- **Примеры env:** [`backend/.env.example`](../../../../../../../backend/.env.example) (строка `DATABASE_URL` под локальный compose), ссылка в корневом [`.env.example`](../../../../../../../.env.example).
+- **Примеры env:** [`backend/.env.example`](../../../../../../../backend/.env.example) (строка `DATABASE_URL` под локальный compose).
 
 ## Отклонения от формулировок tasklist
 

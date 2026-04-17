@@ -7,7 +7,7 @@
 ## О проекте
 
 Студенты курса теряют ориентиры: где материалы, что дальше, как зафиксировать результат.  
-Система даёт единую точку входа через Telegram-бота (сейчас) и веб-кабинет (следующий этап).  
+Система даёт единую точку входа через Telegram-бота и веб-кабинет.  
 Ключевые пользователи: **студент** — навигация и прогресс; **преподаватель** — обзор потока.
 
 ## Архитектура
@@ -15,11 +15,11 @@
 ```mermaid
 flowchart LR
   subgraph clients["Клиенты"]
-    TG["Telegram-бот\n(frontend/bot)"]
+    TG["Telegram-бот\n(bot/)"]
     WEB["Веб-приложение\n(frontend/web)"]
   end
   subgraph core["Ядро"]
-    BE["Backend API"]
+    BE["Backend API\n(backend/)"]
     DB[("PostgreSQL")]
     LLM["LLM\n(OpenRouter)"]
   end
@@ -29,21 +29,18 @@ flowchart LR
   BE --> LLM
 ```
 
-Бизнес-логика живёт только в `backend/`. Бот и веб — тонкие клиенты без уникальных правил.
+Бизнес-логика живёт только в `backend/`. Бот (`bot/`) и веб (`frontend/web/`) — тонкие клиенты без уникальных правил.
+
+Обзор компонентов, схемы и ссылки на ADR — [docs/architecture.md](docs/architecture.md). Продуктовые границы — [docs/vision.md](docs/vision.md).
 
 ## Статус
 
-| # | Итерация | Статус |
-|---|----------|--------|
-| 1 | MVP: Telegram-бот (LLM, история в памяти) | ✅ Done |
-| 2 | Backend API (scaffold, LLM, прогресс, поток) | ✅ Done |
-| 3 | База данных (PostgreSQL, схема, миграции) | 📋 Planned |
-| 4 | Frontend (веб-кабинет студента и преподавателя) | 📋 Planned |
-| 5 | Интеграция клиентов (бот + веб → backend API) | 📋 Planned |
-| 6 | Dev&Ops & Production (CI/CD, контейнеры, деплой) | 📋 Planned |
+Дорожная карта и статусы итераций — [docs/plan.md](docs/plan.md).
 
 ## Документация
 
+- [Онбординг разработчика](docs/onboarding.md) — клонирование, env, проверка стека, CI-подобные команды
+- [Архитектура (обзор)](docs/architecture.md)
 - [Идея продукта](docs/idea.md)
 - [Архитектурное видение](docs/vision.md)
 - [Модель данных](docs/data-model.md)
@@ -51,13 +48,29 @@ flowchart LR
 - [План](docs/plan.md)
 - [Задачи](docs/tasks/)
 
+Каталог [data/README.md](data/README.md) описывает **программу учебного курса**, а не runtime приложения LLMStart.
+
+## Требования к окружению
+
+Минимальный набор совпадает с [CI](.github/workflows/ci.yml):
+
+| Инструмент | Версия / ориентир |
+|------------|-------------------|
+| Node.js | **22** |
+| pnpm | **10** (в CI задаётся `pnpm/action-setup`) |
+| uv | актуальная stable ([документация uv](https://docs.astral.sh/uv/)) |
+| Docker + Compose | для локального Postgres (`db-up`) |
+| Python | то, что задаёт корневой и `backend/` проект через uv |
+
+Шаблоны переменных окружения **только у компонентов**: [`backend/.env.example`](backend/.env.example), [`bot/.env.example`](bot/.env.example), [`frontend/web/.env.example`](frontend/web/.env.example) — корневого `.env.example` в репозитории нет.
+
 ## Быстрый старт
 
 Нужен [uv](https://docs.astral.sh/uv/) (корень и `backend/` синхронизируются через lock-файлы).
 
 В **Linux/macOS** или при установленном [GNU Make](https://www.gnu.org/software/make/) удобны цели из [Makefile](Makefile). В **Windows** (PowerShell/cmd) команда `make` часто отсутствует — используйте скрипт **[`tasks.ps1`](tasks.ps1)** (аналог Makefile), команды из раздела [ниже](#windows-no-make) или поставьте Make (например [Chocolatey: `make`](https://community.chocolatey.org/packages/make), пакет MSYS2, Git Bash с make, [WSL](https://learn.microsoft.com/windows/wsl/)).
 
-**Перед PR:** из корня выполните `make install`, затем `make lint` и `make test` — или **`.\tasks.ps1 install`**, **`.\tasks.ps1 lint`**, **`.\tasks.ps1 test`** — либо [эквиваленты вручную](#windows-no-make). На GitHub те же шаги гоняет workflow [`.github/workflows/ci.yml`](.github/workflows/ci.yml).
+**Перед PR:** из корня после `make install` и `make frontend-install` выполните **`make ci-check`** (ruff + ESLint + сборка фронта, как статическая часть CI) и **`make test-backend`** (нужен Postgres) — или **`.\tasks.ps1 ci-check`**, **`.\tasks.ps1 test-backend`**. Полный порядок шагов совпадает с [`.github/workflows/ci.yml`](.github/workflows/ci.yml): зависимости → `pnpm lint` / `pnpm build` во `frontend/web` → ruff → `pytest tests/pg`. **Юнит-тестов у фронта нет** — не ищите `pnpm test`.
 
 <a id="windows-no-make"></a>
 
@@ -65,20 +78,26 @@ flowchart LR
 
 #### Скрипт `tasks.ps1` (как Makefile)
 
+Все перечисленные ниже цели для Windows — только **`tasks.ps1`** (аналог `Makefile`): `install`, **`bot-dev`**, `lint`, `format`, `db-up`, `backend-dev`, `frontend-dev` и др. Раньше в корне лежал отдельный `run.ps1` с урезанным набором команд — он убран в пользу **`tasks.ps1`**.
+
 Из **корня** репозитория, в **PowerShell** (нужны **uv**; для `db-*` — **docker** в PATH или задайте `$env:DOCKER_COMPOSE = 'wsl -e docker compose'`):
 
 ```powershell
 .\tasks.ps1 help          # список целей
 .\tasks.ps1 install
-.\tasks.ps1 lint
-.\tasks.ps1 test-backend
+.\tasks.ps1 frontend-install
+.\tasks.ps1 ci-check       # ruff + pnpm lint + pnpm build (как статика в CI)
+.\tasks.ps1 test-backend   # pytest tests/pg (нужен Postgres)
 .\tasks.ps1 db-up          # compose + миграции на llmstart и llmstart_test
 # при уже запущенном Postgres только основная БД: .\tasks.ps1 db-migrate
 .\tasks.ps1 frontend-install   # зависимости Next.js (frontend/web)
 .\tasks.ps1 frontend-dev       # веб на http://127.0.0.1:3000 (нужен pnpm)
+.\tasks.ps1 bot-dev            # Telegram-бот (как make run)
 ```
 
-Нужен **[pnpm](https://pnpm.io/)** и **Node.js LTS** для `frontend/web/`. Файл окружения веба: скопируйте [`frontend/web/.env.example`](frontend/web/.env.example) → **`frontend/web/.env.local`**, задайте **`BACKEND_ORIGIN`**. Если в **`backend/.env`** включён **`BACKEND_API_CLIENT_TOKEN`**, продублируйте то же значение во **`frontend/web/.env.local`** — иначе для входа через веб токен не нужен. Затем поднимите backend и откройте страницу входа.
+Нужны **[pnpm](https://pnpm.io/)** и **Node.js 22** (как в CI) для `frontend/web/`. Файл окружения веба: скопируйте [`frontend/web/.env.example`](frontend/web/.env.example) → **`frontend/web/.env.local`**, задайте **`BACKEND_ORIGIN`**. Если в **`backend/.env`** включён **`BACKEND_API_CLIENT_TOKEN`**, продублируйте то же значение во **`frontend/web/.env.local`** — иначе для входа через веб токен не нужен. Затем поднимите backend и откройте страницу входа.
+
+Краткий happy-path: [docs/onboarding.md](docs/onboarding.md) (разделы 2–3).
 
 После полного `alembic upgrade head` ревизия **`0007`** (если ещё не применена) создаёт демо-поток с `cohorts.code = demo_frontend_mvp`: преподаватель **`telegram_username` akozhin**, **`telegram_user_id` 162684825**, студенты `demo_student_alpha` / `beta` / `gamma`, чекпоинты (в т.ч. ДЗ), прогресс и реплики в диалогах для KPI и веб-экранов.
 
@@ -105,9 +124,10 @@ flowchart LR
 | Цель `make` | Команды |
 |-------------|---------|
 | `install` | `uv sync --group dev`, затем в `backend\`: `uv sync --extra dev` |
+| `ci-check` | `lint`, затем `frontend-lint`, затем `frontend-build` (статическая часть CI; сначала один раз `frontend-install`) |
 | `run` | `uv run python -m bot.main` |
-| `lint` | `uv run ruff check bot` и `uv run ruff format --check bot`; затем в `backend\`: `uv run ruff check app tests` и `uv run ruff format --check app tests` |
-| `format` | `uv run ruff format bot` и `uv run ruff check --fix bot`; затем в `backend\`: `uv run ruff format app tests` и `uv run ruff check --fix app tests` |
+| `lint` | `uv run ruff check bot` и `uv run ruff format --check bot`; затем в `backend\`: `uv run --extra dev ruff check app tests` и `uv run --extra dev ruff format --check app tests` |
+| `format` | `uv run ruff format bot` и `uv run ruff check --fix bot`; затем в `backend\`: `uv run --extra dev ruff format app tests` и `uv run --extra dev ruff check --fix app tests` |
 | `test` / `test-backend` / `test-all` | в `backend\`: `uv sync --extra dev`, `uv run pytest tests/pg` (Postgres `*_test`; `tasks.ps1` выставляет `TEST_DATABASE_URL`) |
 | `migrate-backend` | в `backend\`: `uv sync --extra dev`, затем `uv run alembic upgrade head` (только **`POSTGRES_DB`**) |
 | `db-migrate-test` | `db-migrate-all`, затем `test-backend` (pytest на **`TEST_DATABASE_URL`** → обычно `llmstart_test`). |
@@ -120,7 +140,7 @@ flowchart LR
 
 Нужен файл окружения (зависимости — через `make install` или `uv sync` в `backend/`). Конфиг backend ([`backend/app/config.py`](backend/app/config.py)) читает **`backend/.env`** (`env_file=".env"` при запуске из каталога `backend/`). Строка **`DATABASE_URL`** (PostgreSQL) задаётся только там.
 
-1. Шаблон backend — [`backend/.env.example`](backend/.env.example) → **`backend/.env`**. Бот — корневой [`.env.example`](.env.example) → **`.env`** в корне репозитория; конфиг бота подгружается **только** оттуда (не из `backend/.env`).
+1. Шаблон backend — [`backend/.env.example`](backend/.env.example) → **`backend/.env`**. Бот — [`bot/.env.example`](bot/.env.example) → **`bot/.env`**; конфиг бота подгружается **только** оттуда (не из `backend/.env`).
 2. Установить зависимости и запустить сервер из каталога `backend/`:
 
 ```bash
@@ -129,7 +149,7 @@ uv sync
 uv run uvicorn app.main:app --host 127.0.0.1 --port 8000
 ```
 
-`BACKEND_HOST` и `BACKEND_PORT` в `.env` должны совпадать с аргументами `--host` / `--port` у uvicorn.
+`BACKEND_HOST` и `BACKEND_PORT` в **`backend/.env`** должны совпадать с аргументами `--host` / `--port` у uvicorn.
 
 Для **тестов** и **миграций Alembic** нужен dev-набор: `uv sync --extra dev`.
 
@@ -153,9 +173,9 @@ uv run uvicorn app.main:app --host 127.0.0.1 --port 8000
 
 Бот ходит только в **backend API** (LLM на стороне ядра). **Запуск** достаточно с `TELEGRAM_TOKEN` и поднятым backend. **`COHORT_ID` и `MEMBERSHIP_ID` не обязательны:** в этом случае используется **guest-режим** (`POST /api/v1/assistant/guest/*`) — диалог в памяти процесса backend, без строк в БД; сценарий позже можно сменить на поток/membership. Если оба UUID заданы и данные есть в БД, запросы идут в основной контракт `.../cohorts/{id}/dialogues/messages` с персистентностью.
 
-Проверка **Telegram username** через тот же контракт, что и веб-вход: команды **`/username имя`** (без пробелов в аргументе) и **`/login`** (бот попросит ввести username следующим сообщением). Если на backend включён Bearer, в корневом `.env` бота задайте **`BACKEND_API_CLIENT_TOKEN`** (как для остальных вызовов API).
+Проверка **Telegram username** через тот же контракт, что и веб-вход: команды **`/username имя`** (без пробелов в аргументе) и **`/login`** (бот попросит ввести username следующим сообщением). Если на backend включён Bearer, в **`bot/.env`** задайте **`BACKEND_API_CLIENT_TOKEN`** (как для остальных вызовов API).
 
-**Локально (PostgreSQL):** после **`make db-up`** и **`make migrate-backend`** выполните демо-вставки в БД (например **`make db-shell`** или клиент к `DATABASE_URL`). Подставьте свои UUID в `.env` или оставьте эти и скопируйте в `COHORT_ID` / `MEMBERSHIP_ID`:
+**Локально (PostgreSQL):** после **`make db-up`** и **`make migrate-backend`** выполните демо-вставки в БД (например **`make db-shell`** или клиент к `DATABASE_URL`). Подставьте свои UUID в **`bot/.env`** или оставьте эти и скопируйте в `COHORT_ID` / `MEMBERSHIP_ID`:
 
 ```sql
 INSERT INTO users (id, telegram_user_id, name)
@@ -172,26 +192,26 @@ VALUES (
 );
 ```
 
-Тогда в `.env`: `COHORT_ID=22222222-2222-2222-2222-222222222222`, `MEMBERSHIP_ID=33333333-3333-3333-3333-333333333333`.
+Тогда в **`bot/.env`**: `COHORT_ID=22222222-2222-2222-2222-222222222222`, `MEMBERSHIP_ID=33333333-3333-3333-3333-333333333333`.
 
-Скопировать корневой [`.env.example`](.env.example) → `.env` и задать **`TELEGRAM_TOKEN`**. **`COHORT_ID` / `MEMBERSHIP_ID`** нужны только для режима с БД (SQL ниже); без них работает guest-LLM через тот же backend. Если включён Bearer для API, добавьте в тот же `.env` **`BACKEND_API_CLIENT_TOKEN`** из [`backend/.env.example`](backend/.env.example) (значение должно совпадать с backend). Параметры LLM для процесса backend — там же в `backend/.env.example` (**`OPENROUTER_API_KEY`** и др.; пустой ключ → заглушка). Из **корня** репозитория:
+Скопировать [`bot/.env.example`](bot/.env.example) → **`bot/.env`** и задать **`TELEGRAM_TOKEN`**. **`COHORT_ID` / `MEMBERSHIP_ID`** нужны только для режима с БД (SQL ниже); без них работает guest-LLM через тот же backend. Если включён Bearer для API, добавьте в **`bot/.env`** **`BACKEND_API_CLIENT_TOKEN`** из [`backend/.env.example`](backend/.env.example) (значение должно совпадать с backend). Параметры LLM для процесса backend — там же в `backend/.env.example` (**`OPENROUTER_API_KEY`** и др.; пустой ключ → заглушка). Из **корня** репозитория:
 
 ```bash
 make install
 make run
 ```
 
-Без make (Windows): см. [таблицу выше](#windows-no-make) — `install` и `run`.
+Без make (Windows): **`.\tasks.ps1 install`** и **`.\tasks.ps1 bot-dev`** (аналог **`make install`** / **`make run`**); либо команды из [таблицы выше](#windows-no-make).
 
-На MVP один `MEMBERSHIP_ID` в `.env` используется для всех пользователей Telegram; для продакшена нужна отдельная привязка аккаунтов.
+На MVP один `MEMBERSHIP_ID` в **`bot/.env`** используется для всех пользователей Telegram; для продакшена нужна отдельная привязка аккаунтов.
 
-`PROXY_URL` в корневом `.env` используется **только для Telegram** (aiogram). Запросы бота к `BACKEND_BASE_URL` идут **напрямую**; отдельный прокси для backend — переменная `BACKEND_HTTP_PROXY` (см. [`.env.example`](.env.example)).
+`PROXY_URL` в **`bot/.env`** используется **только для Telegram** (aiogram). Запросы бота к `BACKEND_BASE_URL` идут **напрямую**; отдельный прокси для backend — переменная `BACKEND_HTTP_PROXY` (см. [`bot/.env.example`](bot/.env.example)).
 
 **Если бот «молчит» или нет ответа на текст:**
 
 1. **Пишите в личку боту**, не в группу: в группах включена **privacy mode** — бот не видит обычные сообщения, только команды и упоминания. В коде бота ответ в группе заменён на подсказку открыть личный чат.
 2. **Backend запущен** и доступен с машины, где крутится бот: `GET http://127.0.0.1:8000/health` (или ваш `BACKEND_BASE_URL`). Иначе бот ответит строкой про недоступность сервера.
-3. Если в `backend/.env` задан **`BACKEND_API_CLIENT_TOKEN`**, в корневом `.env` для бота должно быть **то же значение** — иначе `401` и ответ «Нет доступа к сервису».
+3. Если в `backend/.env` задан **`BACKEND_API_CLIENT_TOKEN`**, в **`bot/.env`** должно быть **то же значение** — иначе `401` и ответ «Нет доступа к сервису».
 4. У **@BotFather** для бота не должен быть активен **webhook**, если вы используете **polling** (`make run`): при необходимости сбросьте webhook через Bot API или @BotFather.
 5. **`PROXY_URL`** (только Telegram): если задан неверный или недоступный прокси, запросы к Telegram API зависают и падают с `ProxyTimeoutError` — оставьте переменную **пустой**, если прокси не нужен.
 6. Ответ бота «Не удалось получить ответ» при **502** от backend: смотрите лог **uvicorn** — строка `llm_upstream_4xx` с подсказкой от провайдера. Обычно это неверный или пустой **`OPENROUTER_API_KEY`**, лимит, имя модели или блокировка исходящего HTTPS (в т.ч. **`PROXY_URL`** в `backend/.env` для вызова OpenRouter).
@@ -200,4 +220,4 @@ make run
 
 ### Полный стек (бот + backend + CI)
 
-Пайплайн **lint + test** на push/PR в ветках `main`/`master` — [`.github/workflows/ci.yml`](.github/workflows/ci.yml). Дорожная карта и итерация Dev&Ops — [`docs/plan.md`](docs/plan.md); задача **08** в [tasklist-backend](docs/tasks/tasklist-backend.md) закрывает единый `Makefile` и CI на уровне репозитория.
+Пайплайн на push/PR в ветках `main`/`master` — [`.github/workflows/ci.yml`](.github/workflows/ci.yml): установка зависимостей, **`pnpm lint`** и **`pnpm build`** в `frontend/web/`, затем **ruff** по `bot/` и `backend/`, затем **`pytest tests/pg`** на PostgreSQL. Локально то же разумно повторить как **`make ci-check`** (или `.\tasks.ps1 ci-check`) и **`make test-backend`**. Дорожная карта — [`docs/plan.md`](docs/plan.md); задача **08** в [tasklist-backend](docs/tasks/tasklist-backend.md) закрывает единый `Makefile` и CI на уровне репозитория.

@@ -51,12 +51,13 @@ def build_message_router(llm: BackendAssistantService) -> Router:
             err_name = type(exc).__name__
             if "Proxy" in err_name and "Timeout" in err_name:
                 fallback = (
-                    "Таймаут подключения к прокси для Telegram. Проверьте PROXY_URL в .env "
+                    "Таймаут подключения к прокси для Telegram. Проверьте PROXY_URL в bot/.env "
                     "или оставьте переменную пустой, если прокси не нужен."
                 )
             elif "Proxy" in err_name:
                 fallback = (
-                    "Ошибка прокси для Telegram. Проверьте PROXY_URL в .env или отключите прокси."
+                    "Ошибка прокси для Telegram. Проверьте PROXY_URL в bot/.env "
+                    "или отключите прокси."
                 )
             else:
                 fallback = "Произошла ошибка при обработке сообщения. Попробуйте позже."

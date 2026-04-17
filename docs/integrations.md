@@ -54,7 +54,7 @@ flowchart TB
 
 **Аутентификация клиентов:** в [`docs/api/openapi-v1.yaml`](api/openapi-v1.yaml) зафиксирована схема `bearerAuth`. Опционально `BACKEND_API_CLIENT_TOKEN` в `Settings`: если задан, для `/api/v1/*` требуется `Authorization: Bearer` с этим значением (см. [`backend/.env.example`](../backend/.env.example)).
 
-**Секреты (только окружение, не репозиторий):** `TELEGRAM_TOKEN` и остальные переменные бота — **только** в корневом `.env` (читает `bot/config.py`). `OPENROUTER_API_KEY` и LLM — **только** в `backend/.env`. Опционально `BACKEND_API_CLIENT_TOKEN` задаётся в **обоих** местах с **одинаковым** значением (backend проверяет Bearer, бот его отправляет). Шаблоны: [`.env.example`](../.env.example) — бот; [`backend/.env.example`](../backend/.env.example) — backend.
+**Секреты (только окружение, не репозиторий):** `TELEGRAM_TOKEN` и остальные переменные бота — **только** в **`bot/.env`** (читает `bot/config.py`). `OPENROUTER_API_KEY` и LLM — **только** в `backend/.env`. Опционально `BACKEND_API_CLIENT_TOKEN` задаётся в **обоих** местах с **одинаковым** значением (backend проверяет Bearer, бот его отправляет). Шаблоны: [`bot/.env.example`](../bot/.env.example) — бот; [`backend/.env.example`](../backend/.env.example) — backend.
 
 ---
 

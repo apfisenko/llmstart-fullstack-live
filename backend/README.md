@@ -1,6 +1,6 @@
 # LLMStart — backend
 
-HTTP API ядра: FastAPI, конфиг из **`backend/.env`** (все переменные процесса backend, включая **`DATABASE_URL`**). Краткий сценарий «с нуля» — в корневом [README.md](../README.md); здесь — детали.
+HTTP API ядра: FastAPI, конфиг из **`backend/.env`** (все переменные процесса backend, включая **`DATABASE_URL`**). Краткий сценарий «с нуля» — [docs/onboarding.md](../docs/onboarding.md) и корневой [README.md](../README.md); здесь — детали.
 
 Запуск из каталога `backend/` (хост/порт должны совпадать с `BACKEND_HOST` / `BACKEND_PORT` в `.env`):
 

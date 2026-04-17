@@ -7,13 +7,13 @@ from uuid import UUID
 from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
-# Репозиторий: bot/config.py → родитель каталога bot/
-_REPO_ROOT = Path(__file__).resolve().parents[1]
+# Каталог пакета бота — рядом с `bot/.env`
+_BOT_DIR = Path(__file__).resolve().parent
 
 
 def _env_files_for_bot() -> tuple[str, ...]:
-    """Переменные бота — только из корневого `.env` репозитория (`./.env`)."""
-    return (str(_REPO_ROOT / ".env"),)
+    """Переменные бота — только из `bot/.env`."""
+    return (str(_BOT_DIR / ".env"),)
 
 
 class Config(BaseSettings):
@@ -30,8 +30,7 @@ class Config(BaseSettings):
     def telegram_token_non_empty(cls, value: Any) -> Any:
         if isinstance(value, str) and not value.strip():
             raise ValueError(
-                "TELEGRAM_TOKEN пустой: задайте токен в корневом .env репозитория "
-                f"({_REPO_ROOT / '.env'})."
+                f"TELEGRAM_TOKEN пустой: задайте токен в bot/.env ({_BOT_DIR / '.env'})."
             )
         return value
 

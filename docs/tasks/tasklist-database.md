@@ -204,7 +204,7 @@
 - Настроить async-сессию SQLAlchemy в `backend/app/infrastructure/`, dependency в `backend/app/api/deps.py`
 - Переписать сервисы диалога: заменить `dict` в памяти на репозиторий диалогов / ходов (`dialogue_turns`)
 - Переписать сервисы прогресса: заменить `dict` в памяти на репозиторий `ProgressRecord` / чекпоинтов
-- Обновить `backend/config.py`: добавить `DATABASE_URL`, обновить `.env.example`
+- Обновить `backend/config.py`: добавить `DATABASE_URL`, обновить `backend/.env.example`
 - Обновить тесты: использовать тестовую БД или моки репозиториев, `make backend-test` зелёный
 - Провести sanitize + verify для каждого изменённого файла (`ruff check --fix`, `ruff format`, `mypy`)
 - Обновить `docs/data-model.md` — сверить финальную схему с реализацией
@@ -235,7 +235,7 @@
 - `backend/services/dialogue.py` — переписан на БД
 - `backend/services/progress.py` — переписан на БД
 - `backend/config.py` — добавлен `DATABASE_URL`
-- `.env.example` — обновлён
+- `backend/.env.example` — обновлён
 - `backend/tests/` — обновлённые тесты
 
 ### **Документы**

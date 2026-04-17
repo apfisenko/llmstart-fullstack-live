@@ -14,7 +14,7 @@
 ## План работ
 
 1. Добавить [`docker-compose.yml`](../../../../../../../docker-compose.yml) (postgres 16, volume, healthcheck).
-2. Обновить [`backend/.env.example`](../../../../../../../backend/.env.example), при необходимости корневой [`.env.example`](../../../../../../../.env.example).
+2. Обновить [`backend/.env.example`](../../../../../../../backend/.env.example) при необходимости.
 3. Расширить [`Makefile`](../../../../../../../Makefile): `db-up`, `db-down`, `db-reset`, `db-migrate`, `db-shell`; `migrate-backend` → синоним `db-migrate`; дефолтный `DATABASE_URL` под compose.
 4. Ревизия Alembic **`0003_seed_progress`**: чтение JSON, вставка когорты, пользователей, членств, чекпоинтов, `progress_records` (`done` → `completed`, таймзона Moscow для naive `submitted_at`).
 5. Обновить [`docs/tech/db-tooling-guide.md`](../../../../../../tech/db-tooling-guide.md): Docker, make, ревизия 0003, проверочные `SELECT`.

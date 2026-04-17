@@ -20,9 +20,7 @@ class UserRepository:
 
     async def get_by_telegram_username(self, normalized: str) -> User | None:
         return await self._session.scalar(
-            select(User)
-            .where(func.lower(User.telegram_username) == normalized)
-            .limit(1)
+            select(User).where(func.lower(User.telegram_username) == normalized).limit(1)
         )
 
     async def user_with_memberships(self, user_id) -> User | None:

@@ -11,7 +11,7 @@
 1. Создан каталог [`backend/`](../../../../../../../backend/) с [`pyproject.toml`](../../../../../../../backend/pyproject.toml), пакетом [`app/`](../../../../../../../backend/app/), пустыми [`migrations/`](../../../../../../../backend/migrations/) (placeholder под Alembic).
 2. Реализованы [`app/main.py`](../../../../../../../backend/app/main.py) (lifespan, `GET /health`, подключение v1), [`app/config.py`](../../../../../../../backend/app/config.py) (pydantic-settings), [`app/api/deps.py`](../../../../../../../backend/app/api/deps.py) (`SettingsDep`), [`app/api/v1/router.py`](../../../../../../../backend/app/api/v1/router.py) — пустой префикс `/api/v1`.
 3. Настроен [`ruff`](../../../../../../../backend/pyproject.toml) в `pyproject.toml`; проверка: `uv run ruff check app`.
-4. Обновлены корневые [`.env.example`](../../../../../../../.env.example) и [`backend/.env.example`](../../../../../../../backend/.env.example); кратко — корневой [`README.md`](../../../../../../../README.md) и [`backend/README.md`](../../../../../../../backend/README.md).
+4. Обновлён [`backend/.env.example`](../../../../../../../backend/.env.example); кратко — корневой [`README.md`](../../../../../../../README.md) и [`backend/README.md`](../../../../../../../backend/README.md).
 
 ---
 

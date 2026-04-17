@@ -87,7 +87,8 @@ backend/
 ```
 bot/
   main.py                      # запуск polling
-  config.py                    # Config класс, читает .env
+  config.py                    # Config класс, читает bot/.env
+  .env.example                 # шаблон переменных бота
   handlers/                    # только роутинг → вызов сервисов
   services/backend_assistant.py  # HTTP: chat(chat_id, text) → str, reset_history
 ```

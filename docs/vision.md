@@ -1,6 +1,6 @@
 # Техническое видение системы
 
-Система сопровождения учебного потока курса **AI-driven fullstack developer**. Продуктовая идея и границы ценности — в [`idea.md`](idea.md).
+Система сопровождения учебного потока курса **AI-driven fullstack developer**. Продуктовая идея и границы ценности — в [`idea.md`](idea.md). Практический онбординг разработчика — [`onboarding.md`](onboarding.md); обзор репозитория — [`architecture.md`](architecture.md).
 
 ---
 
@@ -154,7 +154,7 @@ flowchart TB
 
 ```text
 llmstart-fullstack-live/
-├── .env.example
+├── bot/                        # Telegram-клиент; шаблон окружения: bot/.env.example → bot/.env
 ├── .gitignore
 ├── Makefile
 ├── pyproject.toml              # workspace / общие задачи (Python: bot и backend)

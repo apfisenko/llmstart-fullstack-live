@@ -104,9 +104,7 @@ def create_app(
     application.state.engine = eng
     application.state.session_factory = sess_factory
     application.state.database_connect_target = (
-        f"{_db_url_parsed.host}:{_db_url_parsed.port}"
-        if _db_url_parsed.host
-        else ""
+        f"{_db_url_parsed.host}:{_db_url_parsed.port}" if _db_url_parsed.host else ""
     )
     if llm_override is not None:
         application.state.llm = llm_override

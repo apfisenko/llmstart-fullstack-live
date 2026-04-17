@@ -8,7 +8,7 @@
 
 ## Цель
 
-Рабочий каркас `backend/`: `pyproject.toml` + `uv`, структура `app/` по [`.cursor/rules/conventions.mdc`](../../../../../../../.cursor/rules/conventions.mdc), конфигурация (fail-fast), `GET /health` вне `/api/v1/`, пустой роутер v1, `ruff`, обновление [`.env.example`](../../../../../../../.env.example) и [README](../../../../../../../README.md).
+Рабочий каркас `backend/`: `pyproject.toml` + `uv`, структура `app/` по [`.cursor/rules/conventions.mdc`](../../../../../../../.cursor/rules/conventions.mdc), конфигурация (fail-fast), `GET /health` вне `/api/v1/`, пустой роутер v1, `ruff`, обновление [`backend/.env.example`](../../../../../../../backend/.env.example) и [README](../../../../../../../README.md).
 
 ---
 
@@ -20,7 +20,7 @@
 | Зависимости | `backend/pyproject.toml`: FastAPI, uvicorn, pydantic-settings, python-dotenv; dev: ruff; сборка: hatchling |
 | Конфиг | `Settings`: `BACKEND_HOST`, `BACKEND_PORT`, `LOG_LEVEL`; `env_file`: `.env`, `../.env` |
 | Маршруты | `GET /health` → `{"status":"ok"}`; подключён `APIRouter(prefix="/api/v1")` без бизнес-маршрутов; `/docs`, `/openapi.json` — стандарт FastAPI |
-| Документация | [backend/README.md](../../../../../../../backend/README.md); корневой README и `.env.example` — секция backend |
+| Документация | [backend/README.md](../../../../../../../backend/README.md); корневой README и `backend/.env.example` — секция backend |
 
 ---
 
