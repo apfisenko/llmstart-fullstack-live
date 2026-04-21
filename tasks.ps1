@@ -10,7 +10,7 @@
   (Docker только внутри WSL). Иначе можно задать вручную:
     $env:DOCKER_COMPOSE = "wsl -d Ubuntu -e docker compose"; .\tasks.ps1 db-up
 
-  Env vars (same as Makefile): POSTGRES_*, DATABASE_URL, TEST_DATABASE_URL, DOCKER_COMPOSE, STACK_SERVICE (для stack-logs), GHCR_IMAGE_NAMESPACE, GHCR_IMAGE_REPO, IMAGE_TAG (для stack-*-ghcr*).
+  Env vars (same as Makefile): POSTGRES_*, DATABASE_URL, TEST_DATABASE_URL, DOCKER_COMPOSE, STACK_SERVICE (для stack-logs).
 #>
 param(
     [Parameter(Position = 0)]
@@ -447,12 +447,28 @@ function Task-StackUpWsl {
     Invoke-DockerComposeWsl @("--profile", "app", "up", "-d", "--wait")
 }
 
+function Task-StackUpGhcr {
+    Invoke-DockerCompose @("-f", "docker-compose.ghcr.yml", "--profile", "app", "up", "-d", "--wait")
+}
+
+function Task-StackUpGhcrWsl {
+    Invoke-DockerComposeWsl @("-f", "docker-compose.ghcr.yml", "--profile", "app", "up", "-d", "--wait")
+}
+
 function Task-StackDown {
     Invoke-DockerCompose @("--profile", "app", "down")
 }
 
 function Task-StackDownWsl {
     Invoke-DockerComposeWsl @("--profile", "app", "down")
+}
+
+function Task-StackDownGhcr {
+    Invoke-DockerCompose @("-f", "docker-compose.ghcr.yml", "--profile", "app", "down")
+}
+
+function Task-StackDownGhcrWsl {
+    Invoke-DockerComposeWsl @("-f", "docker-compose.ghcr.yml", "--profile", "app", "down")
 }
 
 function Task-StackStatus {
@@ -471,47 +487,6 @@ function Task-StackLogs {
 
 function Task-StackBuild {
     Invoke-DockerCompose @("--profile", "app", "build")
-}
-
-function Assert-GhcrComposeEnv {
-    if (-not $env:GHCR_IMAGE_NAMESPACE -or -not $env:GHCR_IMAGE_NAMESPACE.Trim()) {
-        throw "Задайте `$env:GHCR_IMAGE_NAMESPACE` (владелец GitHub в lower case, как в ghcr.io/OWNER/...)."
-    }
-    if (-not $env:GHCR_IMAGE_REPO -or -not $env:GHCR_IMAGE_REPO.Trim()) {
-        throw "Задайте `$env:GHCR_IMAGE_REPO` (имя репозитория без владельца, lower case)."
-    }
-}
-
-function Task-StackPullGhcr {
-    Assert-GhcrComposeEnv
-    Invoke-DockerCompose @(
-        "-f", "docker-compose.yml", "-f", "docker-compose.ghcr.yml",
-        "--profile", "app", "pull", "backend", "web", "bot"
-    )
-}
-
-function Task-StackUpGhcr {
-    Assert-GhcrComposeEnv
-    Invoke-DockerCompose @(
-        "-f", "docker-compose.yml", "-f", "docker-compose.ghcr.yml",
-        "--profile", "app", "up", "-d", "--wait", "--no-build"
-    )
-}
-
-function Task-StackPullGhcrWsl {
-    Assert-GhcrComposeEnv
-    Invoke-DockerComposeWsl @(
-        "-f", "docker-compose.yml", "-f", "docker-compose.ghcr.yml",
-        "--profile", "app", "pull", "backend", "web", "bot"
-    )
-}
-
-function Task-StackUpGhcrWsl {
-    Assert-GhcrComposeEnv
-    Invoke-DockerComposeWsl @(
-        "-f", "docker-compose.yml", "-f", "docker-compose.ghcr.yml",
-        "--profile", "app", "up", "-d", "--wait", "--no-build"
-    )
 }
 
 function Task-StackRebuildBackendWsl {
@@ -569,11 +544,11 @@ function Show-Help {
         '  db-reset                down -v, up postgres --wait, миграции на обе БД'
         '  stack-up, stack-down    полный стек Docker (профиль app: backend, web, bot)'
         '  stack-up-wsl, stack-down-wsl — то же через WSL (--project-directory → /mnt/... )'
+        '  stack-up-ghcr, stack-down-ghcr — стек из образов GHCR (-f docker-compose.ghcr.yml; LLMSTART_GHCR_IMAGE_ROOT в .env)'
+        '  stack-up-ghcr-wsl, stack-down-ghcr-wsl — то же через WSL (см. docs/tech/docker-compose-ghcr.md)'
         '  stack-status            docker compose ps -a'
         '  stack-logs              docker compose logs -f (опционально $env:STACK_SERVICE=web|backend|bot|postgres)'
         '  stack-build             docker compose build --profile app'
-        '  stack-pull-ghcr, stack-up-ghcr   pull/up из GHCR (--no-build; нужны GHCR_IMAGE_NAMESPACE, GHCR_IMAGE_REPO)'
-        '  stack-pull-ghcr-wsl, stack-up-ghcr-wsl — то же через WSL (--project-directory → /mnt/... )'
         '  stack-rebuild-backend-wsl  compose down + build backend --no-cache через WSL (/mnt/... )'
         '  check-backend           Invoke-WebRequest http://127.0.0.1:8000/health'
         '  check-web               Invoke-WebRequest http://127.0.0.1:3000/'
@@ -593,7 +568,6 @@ function Show-Help {
         '  frontend-build          pnpm build'
         ''
         'Env: DOCKER_COMPOSE, STACK_SERVICE (для stack-logs — имя сервиса), POSTGRES_*, POSTGRES_TEST_DB, DATABASE_URL, TEST_DATABASE_URL.'
-        'Для GHCR: GHCR_IMAGE_NAMESPACE, GHCR_IMAGE_REPO (lower case), опционально IMAGE_TAG (по умолчанию в compose — latest).'
         ''
         'Docker только в WSL: если `docker` не в PATH Windows, скрипт вызывает `wsl -e docker compose`.'
         'Свой дистрибутив: $env:DOCKER_COMPOSE = ''wsl -d Ubuntu -e docker compose'''
@@ -624,15 +598,15 @@ switch -Regex ($Task.ToLowerInvariant()) {
     "^(db-status)$" { Task-DbStatus }
     "^(stack-up)$" { Task-StackUp }
     "^(stack-up-wsl)$" { Task-StackUpWsl }
+    "^(stack-up-ghcr)$" { Task-StackUpGhcr }
+    "^(stack-up-ghcr-wsl)$" { Task-StackUpGhcrWsl }
     "^(stack-down)$" { Task-StackDown }
     "^(stack-down-wsl)$" { Task-StackDownWsl }
+    "^(stack-down-ghcr)$" { Task-StackDownGhcr }
+    "^(stack-down-ghcr-wsl)$" { Task-StackDownGhcrWsl }
     "^(stack-status)$" { Task-StackStatus }
     "^(stack-logs)$" { Task-StackLogs }
     "^(stack-build)$" { Task-StackBuild }
-    "^(stack-pull-ghcr-wsl)$" { Task-StackPullGhcrWsl }
-    "^(stack-up-ghcr-wsl)$" { Task-StackUpGhcrWsl }
-    "^(stack-pull-ghcr)$" { Task-StackPullGhcr }
-    "^(stack-up-ghcr)$" { Task-StackUpGhcr }
     "^(stack-rebuild-backend-wsl)$" { Task-StackRebuildBackendWsl }
     "^(check-backend)$" { Task-CheckBackend }
     "^(check-web)$" { Task-CheckWeb }

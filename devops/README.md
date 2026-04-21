@@ -36,32 +36,44 @@ docker build -f devops/web/Dockerfile .
 - **Именованный том** `llmstart_pg_data` для данных Postgres.
 - **Init SQL** в одном месте: `devops/postgres/` (каталог `docker/postgres/` — только [README-редирект](../docker/postgres/README.md)).
 
-## Образы в GHCR (CI)
+## GHCR (образы из CI)
 
-Workflow: [`.github/workflows/ghcr.yml`](../.github/workflows/ghcr.yml) — на `push` в `main`/`master`, на `pull_request` (только **сборка**, без push) и `workflow_dispatch`.
+После merge в **`main`** или **`master`** workflow [`.github/workflows/ghcr.yml`](../.github/workflows/ghcr.yml) собирает три образа и пушит в **GitHub Container Registry**.
 
-Имена пакетов (всё в **нижнем регистре**):
+### Имена и теги
 
-| Сервис | Образ |
-|--------|--------|
-| backend | `ghcr.io/<OWNER>/<REPO>-backend` |
-| web | `ghcr.io/<OWNER>/<REPO>-web` |
-| bot | `ghcr.io/<OWNER>/<REPO>-bot` |
+Корень (владелец и репозиторий GitHub в **нижнем регистре**):
 
-`<OWNER>` — `github.repository_owner`, `<REPO>` — имя репозитория без владельца (как в URL GitHub).
+`ghcr.io/<owner>/<repo>`
 
-Теги при `push` в **`main`** или **`master`**: **`latest`** и **полный SHA** коммита на каждый образ. Точный откат: подставьте в `IMAGE_TAG` значение SHA из вкладки Packages / run workflow.
+Образы (отдельные пакеты в GHCR):
 
-Локальный Compose **без** `docker build` приложений: файл [`docker-compose.ghcr.yml`](../docker-compose.ghcr.yml) подставляет `image:` поверх [`docker-compose.yml`](../docker-compose.yml). Переменные:
+| Сервис  | `image` (без тега) |
+|---------|---------------------|
+| backend | `ghcr.io/<owner>/<repo>/backend` |
+| web     | `ghcr.io/<owner>/<repo>/web` |
+| bot     | `ghcr.io/<owner>/<repo>/bot` |
 
-- **`GHCR_IMAGE_NAMESPACE`** — владелец (lower case), например `octocat`;
-- **`GHCR_IMAGE_REPO`** — имя репо (lower case), например `llmstart-fullstack-live`;
-- **`IMAGE_TAG`** — опционально, по умолчанию `latest` (или полный SHA образа из GHCR).
+Теги на каждый успешный прогон: **`latest`** и **`sha-<short>`** (первые 7 символов коммита). Для фиксированной версии укажите `IMAGE_TAG=sha-abcdef1` в окружении или в `.env` рядом с compose.
 
-Команды: `make stack-pull-ghcr` и `make stack-up-ghcr`, либо `.\tasks.ps1 stack-pull-ghcr` / `stack-up-ghcr` (при Docker только в WSL — `stack-*-ghcr-wsl`). Подробнее: [`docs/tech/docker-compose-local.md`](../docs/tech/docker-compose-local.md).
+### Локальный стек без `docker build` приложений
 
-Если пакеты **приватные**, перед `pull` выполните `docker login ghcr.io` (GitHub username + PAT с правом **`read:packages`**; для push из CI используется `GITHUB_TOKEN`).
+Файл **[`docker-compose.ghcr.yml`](../docker-compose.ghcr.yml)** — тот же стек, что в корневом compose, но вместо `build` указаны `image` из GHCR. Переменная **`LLMSTART_GHCR_IMAGE_ROOT`** должна совпадать с корнем образов (например `ghcr.io/myorg/llmstart-fullstack-live`). Пример значений — [`.env.ghcr.example`](../.env.ghcr.example).
 
-### Compose «registry» и docker-expert
+```bash
+# в .env или export:
+export LLMSTART_GHCR_IMAGE_ROOT=ghcr.io/myorg/llmstart-fullstack-live
+export IMAGE_TAG=latest
 
-В смерженном конфиге у `backend`/`web`/`bot` остаётся и `build`, и `image`. Для запуска **только** из registry после `pull` используйте **`docker compose ... up --no-build`** (см. цели `stack-up-ghcr`): подтянутый тег из GHCR используется как образ контейнера, локальная сборка Dockerfile не выполняется.
+docker compose -f docker-compose.ghcr.yml --profile app up -d --wait
+```
+
+Удобные цели: **`make stack-up-ghcr`** / **`make stack-down-ghcr`**, **`.\tasks.ps1 stack-up-ghcr`** или **`stack-up-ghcr-wsl`** (Docker только в WSL).
+
+Подробности (логин в GHCR при приватных пакетах, WSL): **[`docs/tech/docker-compose-ghcr.md`](../docs/tech/docker-compose-ghcr.md)**.
+
+### Compose «из registry» vs локальный build
+
+Сервисы, порты, `depends_on`, healthcheck и env совпадают с [корневым `docker-compose.yml`](../docker-compose.yml); отличается только источник образов (`image` вместо `build`). Postgres по-прежнему официальный `postgres:16-alpine` из Docker Hub.
+
+**Ревью (docker-expert):** отдельный YAML вместо merge-override исключает конфликт «одновременно `build` и `image`» в Compose; дублирование манифеста осознанно минимально и синхронизируется с основным compose при изменении сервисов.

@@ -1,21 +1,97 @@
-# Образы из GitHub Container Registry (см. devops/README.md, docs/tech/docker-compose-local.md).
-# Подставляет только image:; в итоговом конфиге у сервисов остаётся и build из docker-compose.yml.
-#
-# Подъём без локальной сборки приложений:
-#   export GHCR_IMAGE_NAMESPACE=<github_owner_lowercase>
-#   export GHCR_IMAGE_REPO=<repo_name_lowercase>
-#   export IMAGE_TAG=latest   # или полный SHA коммита из CI
-#   docker compose -f docker-compose.yml -f docker-compose.ghcr.yml --profile app pull backend web bot
-#   docker compose -f docker-compose.yml -f docker-compose.ghcr.yml --profile app up -d --wait --no-build
-#
-# В PowerShell без локального docker: задайте DOCKER_COMPOSE и те же переменные, затем .\tasks.ps1 stack-up-ghcr-wsl
-
+# Полный стек с образами из GHCR (без локального build приложений).
+# Задайте LLMSTART_GHCR_IMAGE_ROOT (например ghcr.io/myorg/myrepo) и при необходимости IMAGE_TAG — см. devops/README.md и docs/tech/docker-compose-ghcr.md
 services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: llmstart-postgres
+    shm_size: "512m"
+    restart: unless-stopped
+    command:
+      - postgres
+      - -c
+      - shared_buffers=96MB
+      - -c
+      - max_connections=50
+      - -c
+      - max_wal_size=256MB
+    environment:
+      POSTGRES_USER: llmstart
+      POSTGRES_PASSWORD: llmstart
+      POSTGRES_DB: llmstart
+    ports:
+      - "5432:5432"
+    volumes:
+      - llmstart_pg_data:/var/lib/postgresql/data
+      - ./devops/postgres/docker-entrypoint-initdb.d:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U llmstart -d llmstart"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+
   backend:
-    image: ghcr.io/${GHCR_IMAGE_NAMESPACE:?GHCR_IMAGE_NAMESPACE}/${GHCR_IMAGE_REPO:?GHCR_IMAGE_REPO}-backend:${IMAGE_TAG:-latest}
+    profiles: ["app"]
+    image: ${LLMSTART_GHCR_IMAGE_ROOT:?Set LLMSTART_GHCR_IMAGE_ROOT, e.g. ghcr.io/owner/repo}/backend:${IMAGE_TAG:-latest}
+    container_name: llmstart-backend
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    env_file:
+      - backend/.env
+    environment:
+      DOCKER_DATABASE_URL: postgresql+asyncpg://llmstart:llmstart@postgres:5432/llmstart
+      DATABASE_URL: postgresql+asyncpg://llmstart:llmstart@postgres:5432/llmstart
+      BACKEND_HOST: 0.0.0.0
+      BACKEND_PORT: "8000"
+      PROXY_URL: ""
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "/app/.venv/bin/python",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=5).read()",
+        ]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+      start_period: 300s
 
   web:
-    image: ghcr.io/${GHCR_IMAGE_NAMESPACE}/${GHCR_IMAGE_REPO}-web:${IMAGE_TAG:-latest}
+    profiles: ["app"]
+    image: ${LLMSTART_GHCR_IMAGE_ROOT:?Set LLMSTART_GHCR_IMAGE_ROOT}/web:${IMAGE_TAG:-latest}
+    container_name: llmstart-web
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      BACKEND_ORIGIN: http://backend:8000
+      BACKEND_API_CLIENT_TOKEN: ${BACKEND_API_CLIENT_TOKEN:-}
+    depends_on:
+      backend:
+        condition: service_healthy
 
   bot:
-    image: ghcr.io/${GHCR_IMAGE_NAMESPACE}/${GHCR_IMAGE_REPO}-bot:${IMAGE_TAG:-latest}
+    profiles: ["app"]
+    image: ${LLMSTART_GHCR_IMAGE_ROOT:?Set LLMSTART_GHCR_IMAGE_ROOT}/bot:${IMAGE_TAG:-latest}
+    container_name: llmstart-bot
+    restart: unless-stopped
+    env_file:
+      - bot/.env
+    environment:
+      BACKEND_HOST: backend
+      BACKEND_PORT: "8000"
+      BACKEND_BASE_URL: ""
+      BACKEND_HTTP_PROXY: ""
+    depends_on:
+      postgres:
+        condition: service_healthy
+      backend:
+        condition: service_healthy
+
+volumes:
+  llmstart_pg_data:

@@ -4,36 +4,7 @@
 
 **Docker через WSL (Windows):** если в PowerShell команда `docker` не находится, откройте терминал WSL (Ubuntu и т.п.), перейдите в каталог репозитория и запускайте `docker compose` / `docker build` там — так обычно подключён Docker Desktop (интеграция с WSL2).
 
-## Стек из образов GHCR (без локального build)
-
-После merge в `main`/`master` workflow [`.github/workflows/ghcr.yml`](../../.github/workflows/ghcr.yml) публикует три образа (см. [devops/README.md](../../devops/README.md) — таблица имён и тегов `latest` + SHA).
-
-1. **Логин в registry** (нужен только для приватных пакетов или при лимитах анонимного pull):
-
-   ```bash
-   docker login ghcr.io -u GITHUB_USERNAME
-   ```
-
-   Пароль — Personal Access Token с областью **`read:packages`**.
-
-2. Задайте владельца и имя репозитория **в нижнем регистре** (как в URL GitHub):
-
-   ```bash
-   export GHCR_IMAGE_NAMESPACE=myorg
-   export GHCR_IMAGE_REPO=llmstart-fullstack-live
-   export IMAGE_TAG=latest   # или полный SHA из run GitHub Actions
-   ```
-
-3. Подтянуть приложения и поднять стек **без** сборки Dockerfile на машине:
-
-   ```bash
-   docker compose -f docker-compose.yml -f docker-compose.ghcr.yml --profile app pull backend web bot
-   docker compose -f docker-compose.yml -f docker-compose.ghcr.yml --profile app up -d --wait --no-build
-   ```
-
-   То же через Makefile: `make stack-pull-ghcr` и `make stack-up-ghcr` (переменные окружения те же). В PowerShell: `$env:GHCR_IMAGE_NAMESPACE='...'; $env:GHCR_IMAGE_REPO='...'; .\tasks.ps1 stack-pull-ghcr` затем `.\tasks.ps1 stack-up-ghcr`. Если `docker` только в WSL: **`.\tasks.ps1 stack-pull-ghcr-wsl`** и **`.\tasks.ps1 stack-up-ghcr-wsl`** (скрипт вызывает compose с `--project-directory` в виде `/mnt/.../репозиторий`).
-
-Почему **`--no-build`:** в объединённом файле у сервисов остаётся и `build:` из основного compose, и `image:` из [`docker-compose.ghcr.yml`](../../docker-compose.ghcr.yml); флаг запрещает локальную сборку и оставляет использование уже скачанного образа по тегу.
+**Образы из GHCR без локальной сборки приложений:** [`docker-compose-ghcr.md`](docker-compose-ghcr.md) и корневой [`docker-compose.ghcr.yml`](../../docker-compose.ghcr.yml); цели `stack-up-ghcr` / `stack-up-ghcr-wsl` в Makefile и `tasks.ps1`.
 
 ## Переменные и файлы окружения
 

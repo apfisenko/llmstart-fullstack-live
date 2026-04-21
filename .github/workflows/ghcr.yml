@@ -1,9 +1,10 @@
+# Сборка и публикация образов backend / bot / web в GHCR.
+# Триггер: default branch (main/master) и ручной запуск. Теги: latest + sha-<short>.
 name: GHCR images
 
 on:
   push:
     branches: [main, master]
-  pull_request:
   workflow_dispatch:
 
 permissions:
@@ -11,68 +12,63 @@ permissions:
   packages: write
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
+  group: ghcr-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+env:
+  REGISTRY: ghcr.io
+
 jobs:
-  build-and-push:
+  build-push:
     runs-on: ubuntu-latest
-    timeout-minutes: 90
+    timeout-minutes: 60
     strategy:
       fail-fast: false
       matrix:
         include:
-          - image_suffix: backend
-            dockerfile: devops/backend/Dockerfile
-          - image_suffix: web
-            dockerfile: devops/web/Dockerfile
-          - image_suffix: bot
-            dockerfile: devops/bot/Dockerfile
-
+          - id: backend
+            file: devops/backend/Dockerfile
+          - id: bot
+            file: devops/bot/Dockerfile
+          - id: web
+            file: devops/web/Dockerfile
     steps:
       - uses: actions/checkout@v4
 
-      - name: Set GHCR image name (lowercase)
-        id: ghcr
-        shell: bash
+      - name: Image root (lowercase for GHCR)
+        id: img
         run: |
-          owner=${GITHUB_REPOSITORY_OWNER,,}
-          repo=${GITHUB_REPOSITORY#*/}
-          repo=${repo,,}
-          echo "owner=${owner}" >> "$GITHUB_OUTPUT"
-          echo "repo=${repo}" >> "$GITHUB_OUTPUT"
-          echo "image=ghcr.io/${owner}/${repo}-${{ matrix.image_suffix }}" >> "$GITHUB_OUTPUT"
-
-      - name: Log in to GHCR
-        if: github.event_name != 'pull_request'
-        uses: docker/login-action@v3
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
+          root="ghcr.io/$(echo '${{ github.repository }}' | tr '[:upper:]' '[:lower:]')"
+          echo "root=${root}" >> "$GITHUB_OUTPUT"
+          echo "IMAGE_ROOT=${root}" >> "$GITHUB_ENV"
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # Workflow срабатывает только на main/master — публикуем latest + sha (короткий) на каждый прогон.
       - name: Docker metadata (tags)
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ${{ steps.ghcr.outputs.image }}
-          labels: |
-            org.opencontainers.image.source=https://github.com/${{ github.repository }}
-            org.opencontainers.image.revision=${{ github.sha }}
+          images: ${{ env.IMAGE_ROOT }}/${{ matrix.id }}
           tags: |
-            type=sha,format=long
-            type=raw,value=latest,enable=${{ github.ref == format('refs/heads/{0}', github.event.repository.default_branch) }}
+            type=raw,value=latest
+            type=sha,prefix=sha-,format=short
 
       - name: Build and push
         uses: docker/build-push-action@v6
         with:
           context: .
-          file: ${{ matrix.dockerfile }}
-          push: ${{ github.event_name != 'pull_request' }}
+          file: ${{ matrix.file }}
+          push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=gha,scope=ghcr-${{ matrix.image_suffix }}
-          cache-to: type=gha,mode=max,scope=ghcr-${{ matrix.image_suffix }}
+          cache-from: type=gha,scope=${{ matrix.id }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.id }}

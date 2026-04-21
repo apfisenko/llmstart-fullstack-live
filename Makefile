@@ -3,8 +3,8 @@
 	backend-lint backend-typecheck \
 	db-up db-down db-reset db-migrate db-migrate-test-db db-migrate-all \
 	db-test-create db-migrate-test db-shell db-status migrate-backend migrate-backend-test \
-	stack-up stack-down stack-status stack-logs stack-build stack-rebuild-backend-wsl \
-	stack-pull-ghcr stack-up-ghcr \
+	stack-up stack-down stack-up-ghcr stack-down-ghcr stack-status stack-logs stack-build \
+	stack-rebuild-backend-wsl \
 	check-backend check-web check-bot \
 	frontend-install frontend-dev frontend-lint frontend-build
 
@@ -33,10 +33,10 @@ help:
 	@echo "Основные цели (подробнее: docs/tech/docker-compose-local.md):"
 	@echo "  db-up / db-down / db-reset   — только PostgreSQL из compose + миграции Alembic с хоста"
 	@echo "  stack-up / stack-down       — полный стек (профиль app: backend, web, bot)"
+	@echo "  stack-up-ghcr / stack-down-ghcr — тот же стек из образов GHCR (docker-compose.ghcr.yml; см. docs/tech/docker-compose-ghcr.md)"
 	@echo "  stack-status / stack-logs   — диагностика compose (STACK_SERVICE=web для одного сервиса)"
 	@echo "  stack-build                 — docker compose build --profile app"
 	@echo "  stack-rebuild-backend-wsl   — down + build backend --no-cache (DOCKER_COMPOSE, см. tasks.ps1)"
-	@echo "  stack-pull-ghcr / stack-up-ghcr — образы из GHCR (env GHCR_IMAGE_NAMESPACE, GHCR_IMAGE_REPO; см. devops/README.md)"
 	@echo "  check-backend / check-web / check-bot — HTTP-проверки на localhost (нужен curl)"
 	@echo "  install, lint, test-backend, backend-dev, frontend-*, ci-check — см. Makefile"
 
@@ -102,8 +102,15 @@ db-reset:
 stack-up:
 	$(DOCKER_COMPOSE) --profile app up -d --wait
 
+# Образы из GHCR: в .env или окружении задайте LLMSTART_GHCR_IMAGE_ROOT (см. .env.ghcr.example).
+stack-up-ghcr:
+	$(DOCKER_COMPOSE) -f docker-compose.ghcr.yml --profile app up -d --wait
+
 stack-down:
 	$(DOCKER_COMPOSE) --profile app down
+
+stack-down-ghcr:
+	$(DOCKER_COMPOSE) -f docker-compose.ghcr.yml --profile app down
 
 stack-status:
 	$(DOCKER_COMPOSE) ps -a
@@ -114,13 +121,6 @@ stack-logs:
 
 stack-build:
 	$(DOCKER_COMPOSE) --profile app build
-
-# Образы из GHCR: задайте GHCR_IMAGE_NAMESPACE и GHCR_IMAGE_REPO (lower case), опционально IMAGE_TAG (по умолчанию latest).
-stack-pull-ghcr:
-	$(DOCKER_COMPOSE) -f docker-compose.yml -f docker-compose.ghcr.yml --profile app pull backend web bot
-
-stack-up-ghcr:
-	$(DOCKER_COMPOSE) -f docker-compose.yml -f docker-compose.ghcr.yml --profile app up -d --wait --no-build
 
 # Только WSL в имени: из PowerShell удобнее .\tasks.ps1 stack-rebuild-backend-wsl.
 # Здесь: тот же DOCKER_COMPOSE, что для db-up (задайте wsl -e docker compose при необходимости).
