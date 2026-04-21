@@ -40,6 +40,7 @@ flowchart LR
 ## Документация
 
 - [Онбординг разработчика](docs/onboarding.md) — клонирование, env, проверка стека, CI-подобные команды
+- [Локальный Docker Compose](docs/tech/docker-compose-local.md) — только Postgres или полный стек (`stack-up`), проверки сервисов
 - [Архитектура (обзор)](docs/architecture.md)
 - [Идея продукта](docs/idea.md)
 - [Архитектурное видение](docs/vision.md)
@@ -59,7 +60,7 @@ flowchart LR
 | Node.js | **22** |
 | pnpm | **10** (в CI задаётся `pnpm/action-setup`) |
 | uv | актуальная stable ([документация uv](https://docs.astral.sh/uv/)) |
-| Docker + Compose | для локального Postgres (`db-up`) |
+| Docker + Compose | локальный Postgres (`db-up`) или полный стек — [docker-compose-local.md](docs/tech/docker-compose-local.md) |
 | Python | то, что задаёт корневой и `backend/` проект через uv |
 
 Шаблоны переменных окружения **только у компонентов**: [`backend/.env.example`](backend/.env.example), [`bot/.env.example`](bot/.env.example), [`frontend/web/.env.example`](frontend/web/.env.example) — корневого `.env.example` в репозитории нет.

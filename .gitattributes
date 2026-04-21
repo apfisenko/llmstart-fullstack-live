@@ -1,0 +1,2 @@
+# Скрипты для Linux-контейнеров: CRLF на Windows ломает shebang в Docker.
+*.sh text eol=lf

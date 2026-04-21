@@ -49,6 +49,12 @@ sequenceDiagram
   B-->>C: ответ ассистента
 ```
 
+## Локальный Docker
+
+- Один манифест — корневой [`docker-compose.yml`](../docker-compose.yml): **postgres** всегда в проекте; **backend**, **web**, **bot** включены профилем **`app`** (полный стек).
+- Образы и init SQL — каталог [`devops/`](../devops/README.md); сборка `docker build -f devops/<сервис>/Dockerfile .` из корня репозитория.
+- Внутри compose клиенты ходят в backend по DNS-имени сервиса (`web` → `http://backend:8000`, бот — `BACKEND_HOST=backend`). Подробности и проверки — [tech/docker-compose-local.md](tech/docker-compose-local.md).
+
 ## Детали и контракты
 
 - [vision.md](vision.md) — границы системы, клиенты vs ядро

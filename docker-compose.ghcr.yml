@@ -1,0 +1,21 @@
+# Образы из GitHub Container Registry (см. devops/README.md, docs/tech/docker-compose-local.md).
+# Подставляет только image:; в итоговом конфиге у сервисов остаётся и build из docker-compose.yml.
+#
+# Подъём без локальной сборки приложений:
+#   export GHCR_IMAGE_NAMESPACE=<github_owner_lowercase>
+#   export GHCR_IMAGE_REPO=<repo_name_lowercase>
+#   export IMAGE_TAG=latest   # или полный SHA коммита из CI
+#   docker compose -f docker-compose.yml -f docker-compose.ghcr.yml --profile app pull backend web bot
+#   docker compose -f docker-compose.yml -f docker-compose.ghcr.yml --profile app up -d --wait --no-build
+#
+# В PowerShell без локального docker: задайте DOCKER_COMPOSE и те же переменные, затем .\tasks.ps1 stack-up-ghcr-wsl
+
+services:
+  backend:
+    image: ghcr.io/${GHCR_IMAGE_NAMESPACE:?GHCR_IMAGE_NAMESPACE}/${GHCR_IMAGE_REPO:?GHCR_IMAGE_REPO}-backend:${IMAGE_TAG:-latest}
+
+  web:
+    image: ghcr.io/${GHCR_IMAGE_NAMESPACE}/${GHCR_IMAGE_REPO}-web:${IMAGE_TAG:-latest}
+
+  bot:
+    image: ghcr.io/${GHCR_IMAGE_NAMESPACE}/${GHCR_IMAGE_REPO}-bot:${IMAGE_TAG:-latest}

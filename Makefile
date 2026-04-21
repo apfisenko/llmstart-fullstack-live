@@ -1,9 +1,15 @@
-.PHONY: install run lint format test test-backend ci-check \
+.PHONY: install run lint format test test-backend ci-check help \
 	backend-test backend-dev \
 	backend-lint backend-typecheck \
 	db-up db-down db-reset db-migrate db-migrate-test-db db-migrate-all \
 	db-test-create db-migrate-test db-shell db-status migrate-backend migrate-backend-test \
+	stack-up stack-down stack-status stack-logs stack-build stack-rebuild-backend-wsl \
+	stack-pull-ghcr stack-up-ghcr \
+	check-backend check-web check-bot \
 	frontend-install frontend-dev frontend-lint frontend-build
+
+# Опционально: имя сервиса для `make stack-logs` (postgres | backend | web | bot). Пусто — все сервисы.
+STACK_SERVICE ?=
 
 # Команда Compose: по умолчанию локальный `docker compose`.
 # Если Docker доступен только в WSL (в PowerShell/CMD `docker` не находится), задайте, например:
@@ -22,6 +28,17 @@ POSTGRES_TEST_DB ?= llmstart_test
 DATABASE_URL ?= postgresql+asyncpg://$(POSTGRES_USER):$(POSTGRES_PASSWORD)@127.0.0.1:5432/$(POSTGRES_DB)
 TEST_DATABASE_URL ?= postgresql+asyncpg://$(POSTGRES_USER):$(POSTGRES_PASSWORD)@127.0.0.1:5432/$(POSTGRES_TEST_DB)
 export DATABASE_URL TEST_DATABASE_URL
+
+help:
+	@echo "Основные цели (подробнее: docs/tech/docker-compose-local.md):"
+	@echo "  db-up / db-down / db-reset   — только PostgreSQL из compose + миграции Alembic с хоста"
+	@echo "  stack-up / stack-down       — полный стек (профиль app: backend, web, bot)"
+	@echo "  stack-status / stack-logs   — диагностика compose (STACK_SERVICE=web для одного сервиса)"
+	@echo "  stack-build                 — docker compose build --profile app"
+	@echo "  stack-rebuild-backend-wsl   — down + build backend --no-cache (DOCKER_COMPOSE, см. tasks.ps1)"
+	@echo "  stack-pull-ghcr / stack-up-ghcr — образы из GHCR (env GHCR_IMAGE_NAMESPACE, GHCR_IMAGE_REPO; см. devops/README.md)"
+	@echo "  check-backend / check-web / check-bot — HTTP-проверки на localhost (нужен curl)"
+	@echo "  install, lint, test-backend, backend-dev, frontend-*, ci-check — см. Makefile"
 
 install:
 	uv sync --group dev
@@ -68,9 +85,9 @@ backend-lint: lint
 backend-typecheck:
 	@echo "backend-typecheck: mypy не настроен в backend/pyproject.toml; используйте ruff (make lint)."
 
-# Поднимает Postgres и накатывает Alembic на llmstart и llmstart_test (удобно для GUI-клиентов).
+# Только Postgres из compose (профиль app не трогаем) + Alembic на llmstart и llmstart_test с хоста.
 db-up:
-	$(DOCKER_COMPOSE) up -d --wait
+	$(DOCKER_COMPOSE) up -d --wait postgres
 	$(MAKE) db-migrate-all
 
 db-down:
@@ -78,8 +95,47 @@ db-down:
 
 db-reset:
 	$(DOCKER_COMPOSE) down -v
-	$(DOCKER_COMPOSE) up -d --wait
+	$(DOCKER_COMPOSE) up -d --wait postgres
 	$(MAKE) db-migrate-all
+
+# Полный локальный стек в Docker (нужны backend/.env, bot/.env; опционально BACKEND_API_CLIENT_TOKEN в окружении для web).
+stack-up:
+	$(DOCKER_COMPOSE) --profile app up -d --wait
+
+stack-down:
+	$(DOCKER_COMPOSE) --profile app down
+
+stack-status:
+	$(DOCKER_COMPOSE) ps -a
+
+stack-logs:
+	@test -z "$(STACK_SERVICE)" && $(DOCKER_COMPOSE) --profile app logs -f \
+		|| $(DOCKER_COMPOSE) --profile app logs -f $(STACK_SERVICE)
+
+stack-build:
+	$(DOCKER_COMPOSE) --profile app build
+
+# Образы из GHCR: задайте GHCR_IMAGE_NAMESPACE и GHCR_IMAGE_REPO (lower case), опционально IMAGE_TAG (по умолчанию latest).
+stack-pull-ghcr:
+	$(DOCKER_COMPOSE) -f docker-compose.yml -f docker-compose.ghcr.yml --profile app pull backend web bot
+
+stack-up-ghcr:
+	$(DOCKER_COMPOSE) -f docker-compose.yml -f docker-compose.ghcr.yml --profile app up -d --wait --no-build
+
+# Только WSL в имени: из PowerShell удобнее .\tasks.ps1 stack-rebuild-backend-wsl.
+# Здесь: тот же DOCKER_COMPOSE, что для db-up (задайте wsl -e docker compose при необходимости).
+stack-rebuild-backend-wsl:
+	$(DOCKER_COMPOSE) --profile app down
+	$(DOCKER_COMPOSE) --profile app build backend --no-cache
+
+check-backend:
+	@curl -fsS http://127.0.0.1:8000/health >/dev/null && echo "OK: GET http://127.0.0.1:8000/health"
+
+check-web:
+	@curl -fsS -o /dev/null http://127.0.0.1:3000/ && echo "OK: GET http://127.0.0.1:3000/"
+
+check-bot:
+	@$(DOCKER_COMPOSE) --profile app exec -T bot python -c "import urllib.request; urllib.request.urlopen('http://backend:8000/health', timeout=5)" && echo "OK: bot container -> backend /health"
 
 # Явный DATABASE_URL + --no-env-file: миграции к Docker Postgres, без подмешивания чужого .env.
 db-migrate:

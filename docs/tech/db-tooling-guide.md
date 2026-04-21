@@ -24,11 +24,11 @@ DATABASE_URL=postgresql+asyncpg://user:password@127.0.0.1:5432/llmstart
 
 ## Локальный PostgreSQL (Docker)
 
-В корне репозитория — [`docker-compose.yml`](../../docker-compose.yml): один сервис `postgres` (образ `postgres:16-alpine`), пользователь/роль/имя БД и пароль по умолчанию **`llmstart`**, порт **`5432`**, именованный volume **`llmstart_pg_data`**, **healthcheck** через `pg_isready`.
+В корне репозитория — [`docker-compose.yml`](../../docker-compose.yml): сервис **`postgres`** без профиля (образ `postgres:16-alpine`), init-скрипты — [`devops/postgres/docker-entrypoint-initdb.d/`](../../devops/postgres/docker-entrypoint-initdb.d/); пользователь/роль/имя БД и пароль по умолчанию **`llmstart`**, порт **`5432`**, именованный volume **`llmstart_pg_data`**, **healthcheck** через `pg_isready`. Полный стек приложений — профиль **`app`**; см. [docker-compose-local.md](docker-compose-local.md).
 
 Для Alembic и backend на **хосте** в [`DATABASE_URL`](../../backend/.env.example) указывайте `127.0.0.1`. Если backend запускается в контейнере в той же docker-сети, хост СУБД — имя сервиса **`postgres`**.
 
-Нужны Docker Engine и **Compose V2** (`docker compose`). Цель **`make db-up`** поднимает Postgres (`docker compose up -d --wait`) и затем накатывает Alembic на **`llmstart`** и **`llmstart_test`** (`db-migrate-all`), чтобы в GUI-клиентах не оказывалась «пустая» тестовая БД без схемы. Если флаг `--wait` не поддерживается — обновите Docker Desktop / плагин compose либо поднимите контейнер вручную и дождитесь статуса healthy.
+Нужны Docker Engine и **Compose V2** (`docker compose`). Цель **`make db-up`** поднимает только **`postgres`** (`docker compose up -d --wait postgres`) и затем накатывает Alembic на **`llmstart`** и **`llmstart_test`** (`db-migrate-all`), чтобы в GUI-клиентах не оказывалась «пустая» тестовая БД без схемы. Если флаг `--wait` не поддерживается — обновите Docker Desktop / плагин compose либо поднимите контейнер вручную и дождитесь статуса healthy.
 
 ### Windows: Docker через WSL
 
@@ -81,7 +81,7 @@ make db-up DOCKER_COMPOSE="wsl -e docker compose"
 1. Поднять Postgres из WSL (путь к репозиторию — Linux, см. `/mnt/c/...` или клон в `$HOME`):
 
    ```bash
-   wsl -e bash -lc 'cd "/mnt/c/путь/к/llmstart-fullstack-live" && docker compose up -d --wait'
+   wsl -e bash -lc 'cd "/mnt/c/путь/к/llmstart-fullstack-live" && docker compose up -d --wait postgres'
    ```
 
    Полный сброс volume + миграции (аналог `make db-reset`), если в WSL есть `make` и `uv`. Для репозитория на **`/mnt/c/...`** задайте **`UV_PROJECT_ENVIRONMENT`** (см. подраздел выше), иначе `uv sync` может упасть на `.venv/Scripts`:
@@ -122,9 +122,9 @@ make db-up DOCKER_COMPOSE="wsl -e docker compose"
 
 | Цель | Действие |
 |------|----------|
-| `make db-up` | `docker compose up -d --wait`, затем **`db-migrate-all`** (нужны **uv** и dev-зависимости backend) |
+| `make db-up` | `docker compose up -d --wait postgres`, затем **`db-migrate-all`** (нужны **uv** и dev-зависимости backend) |
 | `make db-down` | `docker compose down` (данные в volume по умолчанию сохраняются) |
-| `make db-reset` | `docker compose down -v`, снова `up --wait`, затем **`db-migrate-all`** |
+| `make db-reset` | `docker compose down -v`, снова `up -d --wait postgres`, затем **`db-migrate-all`** |
 | `make db-migrate` | только БД **`POSTGRES_DB`** (по умолчанию `llmstart`): `cd backend && … alembic upgrade head` |
 | `make db-migrate-test-db` | только **`POSTGRES_TEST_DB`** (по умолчанию `llmstart_test`): те же миграции |
 | `make db-migrate-all` | `db-migrate`, при необходимости **`db-test-create`**, затем **`db-migrate-test-db`** |

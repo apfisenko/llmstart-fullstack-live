@@ -1,0 +1,1 @@
+Init-скрипты PostgreSQL перенесены в [`devops/postgres/docker-entrypoint-initdb.d/`](../devops/postgres/docker-entrypoint-initdb.d/). Корневой [`docker-compose.yml`](../../docker-compose.yml) монтирует только этот каталог.

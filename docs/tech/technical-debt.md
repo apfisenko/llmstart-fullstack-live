@@ -1,7 +1,9 @@
-# Технический долг: frontend (`frontend/web`)
+# Технический долг: frontend (`frontend/web`) и смежные области
 
-**Обновлено:** 2026-04-17  
-**Основание проверки:** ориентиры из skills `shadcn-ui`, `vercel-react-best-practice`; перечень релевантных project skills через `find-skills` (в т.ч. `nextjs-app-router-patterns`, `sharp-edges` — на будущее при доработке маршрутов и окружений).
+**Обновлено (frontend):** 2026-04-17  
+**Обновлено (Docker):** 2026-04-21  
+**Основание проверки (frontend):** ориентиры из skills `shadcn-ui`, `vercel-react-best-practice`; перечень релевантных project skills через `find-skills` (в т.ч. `nextjs-app-router-patterns`, `sharp-edges` — на будущее при доработке маршрутов и окружений).  
+**Основание проверки (Docker):** skill `docker-expert` — `docker-compose.yml`, `devops/*/Dockerfile`, `.dockerignore`, цели `Makefile` для compose.
 
 ---
 
@@ -74,3 +76,17 @@
 ## Документация (не фронт)
 
 - Исторические файлы в [`.cursor/plans/`](../../.cursor/plans/) могут ссылаться на удалённый корневой `.env.example` — не синхронизируются с репо; канон шаблонов — [docs/doc-audit.md](../doc-audit.md).
+
+---
+
+## Docker, Compose, Makefile (локальный стек)
+
+**Уже снято в коде (ревью 2026-04-21):** в `devops/bot/Dockerfile` убран `HEALTHCHECK`, который проверял backend, а не процесс бота (ложный `unhealthy` при сбоях API). В `devops/backend/Dockerfile` убран неиспользуемый слой `apt-get install curl`.
+
+1. **Backend-образ под compose** — один stage, `uv sync --frozen --extra dev`: удобно для локальной разработки, для прод-подобного деплоя разумно завести отдельный build-target без dev-зависимостей и при необходимости разнести миграции и рантайм.
+
+2. **Пины базовых образов** — `postgres:16-alpine`, `python:3.12.8-slim-bookworm`, `node:22.14-bookworm-slim` без digest; для прод-реестра и воспроизводимости CI стоит закреплять digest (и осознанно обновлять).
+
+3. **Контекст сборки** — во всех сервисах `build.context: .`; `.dockerignore` уже уменьшает контекст, но при росте репозитория имеет смысл сузить `context` per-service в compose (например только `frontend/web` для web), если появятся боли в скорости CI.
+
+4. **Makefile на Windows** — цели вроде `stack-logs` и `db-test-create` используют `test`/`grep` в шелле GNU Make; на чистом Windows без Git Bash/WSL могут не работать (частично отражено в комментариях `Makefile` и в [docker-compose-local.md](docker-compose-local.md)).

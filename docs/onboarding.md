@@ -70,6 +70,10 @@ make db-up
 
 **Ожидание:** контейнер Postgres healthy; Alembic накатывает миграции на `llmstart` и `llmstart_test`.
 
+### Полный стек в Docker (опционально)
+
+Чтобы поднять **backend**, **web** и **bot** в контейнерах вместе с Postgres, см. [tech/docker-compose-local.md](tech/docker-compose-local.md): `.\tasks.ps1 stack-up` / `make stack-up`, проверки `check-backend`, `check-web`, `check-bot`. Для привычного сценария «Postgres в Docker, uvicorn на хосте» достаточно **`db-up`** без профиля `app`.
+
 ### Telegram-бот (опционально)
 
 1. [`bot/.env.example`](../bot/.env.example) → `bot/.env`.

@@ -31,9 +31,9 @@
 | 3 | База данных | PostgreSQL, схема, миграции | ✅ Done | [tasklist-database](tasks/tasklist-database.md) |
 | 4 | Реализация Frontend | Веб-кабинет студента и преподавателя | ✅ Done | [tasklist-frontend](tasks/tasklist-frontend.md) |
 | 5 | Интеграция клиентов | Бот и веб работают через backend API | 🚧 In Progress | [tasklist-backend](tasks/tasklist-backend.md) (задача 07) + [tasklist-frontend](tasks/tasklist-frontend.md) |
-| 6 | Dev&Ops & Production | CI/CD, контейнеризация, production-deploy | 📋 Planned | см. примечание ниже |
+| 6 | Dev&Ops & Production | CI/CD, контейнеризация, production-deploy | 📋 Planned | [tasklist-devops](tasks/tasklist-devops.md) |
 
-**Примечание к ссылкам:** отдельные файлы `docs/tasks/tasklist-bot.md` и `docs/tasks/tasklist-infrastructure.md` в репозитории пока не ведутся. Итерация **1:** код и сценарии — каталог [`bot/`](../bot/). Итерация **5:** бот как клиент API закрыт в [tasklist-backend](tasks/tasklist-backend.md) (задача **07**); веб — [tasklist-frontend](tasks/tasklist-frontend.md). Итерация **6:** ориентир — появление `tasklist-infrastructure.md`; уже есть базовый CI в [`.github/workflows/`](../.github/workflows/).
+**Примечание к ссылкам:** отдельный файл `docs/tasks/tasklist-bot.md` в репозитории пока не ведётся. Итерация **1:** код и сценарии — каталог [`bot/`](../bot/). Итерация **5:** бот как клиент API закрыт в [tasklist-backend](tasks/tasklist-backend.md) (задача **07**); веб — [tasklist-frontend](tasks/tasklist-frontend.md). Итерация **6:** детализация — [tasklist-devops](tasks/tasklist-devops.md) (подготовительные итерации: локальный compose, GHCR); уже есть базовый CI в [`.github/workflows/`](../.github/workflows/).
 
 ---
 
@@ -158,7 +158,7 @@
 
 ### Итерация 6: Dev&Ops & Production
 
-**Частично уже есть:** в репозитории настроен [GitHub Actions CI](../.github/workflows/ci.yml) — линт/сборка `frontend/web`, ruff для `bot/` и `backend`, pytest `backend/tests/pg` с сервисом PostgreSQL. Полный DoD итерации (контейнеры всех компонентов, воспроизводимый production-deploy, отдельный tasklist инфраструктуры) — **ещё не закрыт**.
+**Частично уже есть:** в репозитории настроен [GitHub Actions CI](../.github/workflows/ci.yml) — линт/сборка `frontend/web`, ruff для `bot/` и `backend`, pytest `backend/tests/pg` с сервисом PostgreSQL. Локальный полный стек в Docker — [итерация 1 в tasklist-devops](tasks/tasklist-devops.md#iteration-1-local-stack) и [docs/tech/docker-compose-local.md](tech/docker-compose-local.md). Полный DoD итерации (в т.ч. воспроизводимый production-deploy) — **ещё не закрыт**; пошагово — весь [tasklist-devops](tasks/tasklist-devops.md).
 
 **Цель:** контейнеризовать систему, настроить CI/CD и выполнить production-deploy.
 
@@ -172,7 +172,7 @@
 - Секреты не в репозитории; конфиг из окружения валидируется при старте.
 - Логирование: события уровня системы без текста переписки ([`vision.md §15`](vision.md)).
 
-**Связь с tasklist:** при появлении — `docs/tasks/tasklist-infrastructure.md`; сейчас — CI в [`.github/workflows/`](../.github/workflows/), команды в [`Makefile`](../Makefile) и [`README.md`](../README.md).
+**Связь с tasklist:** [docs/tasks/tasklist-devops.md](tasks/tasklist-devops.md); см. также CI в [`.github/workflows/`](../.github/workflows/), команды в [`Makefile`](../Makefile), [`tasks.ps1`](../tasks.ps1) и [`README.md`](../README.md).
 
 **Полезный результат:** система работает в продакшне; новый разработчик поднимает окружение по документации.
 

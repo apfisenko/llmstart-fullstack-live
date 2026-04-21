@@ -10,7 +10,7 @@
   (Docker только внутри WSL). Иначе можно задать вручную:
     $env:DOCKER_COMPOSE = "wsl -d Ubuntu -e docker compose"; .\tasks.ps1 db-up
 
-  Env vars (same as Makefile): POSTGRES_*, DATABASE_URL, TEST_DATABASE_URL, DOCKER_COMPOSE.
+  Env vars (same as Makefile): POSTGRES_*, DATABASE_URL, TEST_DATABASE_URL, DOCKER_COMPOSE, STACK_SERVICE (для stack-logs), GHCR_IMAGE_NAMESPACE, GHCR_IMAGE_REPO, IMAGE_TAG (для stack-*-ghcr*).
 #>
 param(
     [Parameter(Position = 0)]
@@ -66,11 +66,27 @@ function Invoke-DockerCompose {
 }
 
 function Get-RepoRootWslPath {
-    $out = (& wsl wslpath -a $RepoRoot | Out-String).Trim()
-    if ($LASTEXITCODE -ne 0 -or [string]::IsNullOrWhiteSpace($out)) {
-        throw "wslpath не смог преобразовать путь репозитория для WSL: $RepoRoot. Запущен ли WSL?"
+    # wslpath из PowerShell ломается на путях с кириллицей (кодировка аргумента). Для вида X:\... строим /mnt/x/... сами.
+    $p = ($RepoRoot.TrimEnd('\', '/'))
+    if ($p -match '^([A-Za-z]):[/\\](.+)$') {
+        $drive = $Matches[1].ToLowerInvariant()
+        $tail = ($Matches[2] -replace '\\', '/').Trim('/')
+        if ($tail.Length -gt 0) {
+            return "/mnt/$drive/$tail"
+        }
+        return "/mnt/$drive"
     }
-    return $out
+    if ($p -match '^([A-Za-z]):$') {
+        return "/mnt/$($Matches[1].ToLowerInvariant())"
+    }
+    $out = (& wsl wslpath -a $RepoRoot 2>$null | Out-String).Trim()
+    if ($LASTEXITCODE -eq 0 -and -not [string]::IsNullOrWhiteSpace($out)) {
+        return $out
+    }
+    throw (
+        "Не удалось преобразовать путь репозитория для WSL: $RepoRoot " +
+        "(ожидался путь вида D:\... или UNC). Запущен ли WSL?"
+    )
 }
 
 function Invoke-DockerComposeWsl {
@@ -79,7 +95,8 @@ function Invoke-DockerComposeWsl {
         throw "Invoke-DockerComposeWsl: укажите аргументы compose (например stop, down)"
     }
     $wslRoot = Get-RepoRootWslPath
-    & wsl -e docker compose --project-directory $wslRoot @ArgumentList
+    # Один аргумент, чтобы путь с пробелами/Unicode не разъезжался у wsl.exe.
+    & wsl -e docker compose "--project-directory=$wslRoot" @ArgumentList
     if ($LASTEXITCODE -ne 0 -and $null -ne $LASTEXITCODE) {
         exit $LASTEXITCODE
     }
@@ -180,7 +197,7 @@ function Wait-PostgresPort {
 PostgreSQL не принимает TCP на ${ComputerName}:${Port} за $TimeoutSec с.
 
 Проверьте по шагам:
-  1) Запущен ли Docker (Docker Desktop) и контейнер: из корня репозитория — .\tasks.ps1 db-up (или docker compose up -d --wait).
+  1) Запущен ли Docker (Docker Desktop) и контейнер: из корня репозитория — .\tasks.ps1 db-up (или docker compose up -d --wait postgres).
   2) Порт $Port не занят другим Postgres на хосте: netstat -ano | findstr :$Port
   3) Если docker только в WSL: `$env:DOCKER_COMPOSE = 'wsl -e docker compose'; .\tasks.ps1 db-up`
   4) backend/.env — DATABASE_URL с хостом 127.0.0.1 и тем же портом, что проброшен из compose (по умолчанию 5432).
@@ -316,13 +333,13 @@ function Task-DbMigrateAll {
 }
 
 function Task-DbUp {
-    Invoke-DockerCompose @("up", "-d", "--wait")
+    Invoke-DockerCompose @("up", "-d", "--wait", "postgres")
     Wait-PostgresPort
     Task-DbMigrateAll
 }
 
 function Task-DbUpWsl {
-    Invoke-DockerComposeWsl @("up", "-d", "--wait")
+    Invoke-DockerComposeWsl @("up", "-d", "--wait", "postgres")
     Wait-PostgresPort
     Task-DbMigrateAll
 }
@@ -341,7 +358,7 @@ function Task-DbDownWsl {
 
 function Task-DbReset {
     Invoke-DockerCompose @("down", "-v")
-    Invoke-DockerCompose @("up", "-d", "--wait")
+    Invoke-DockerCompose @("up", "-d", "--wait", "postgres")
     Wait-PostgresPort
     Task-DbMigrateAll
 }
@@ -422,6 +439,114 @@ function Task-CiCheck {
     Task-FrontendBuild
 }
 
+function Task-StackUp {
+    Invoke-DockerCompose @("--profile", "app", "up", "-d", "--wait")
+}
+
+function Task-StackUpWsl {
+    Invoke-DockerComposeWsl @("--profile", "app", "up", "-d", "--wait")
+}
+
+function Task-StackDown {
+    Invoke-DockerCompose @("--profile", "app", "down")
+}
+
+function Task-StackDownWsl {
+    Invoke-DockerComposeWsl @("--profile", "app", "down")
+}
+
+function Task-StackStatus {
+    Invoke-DockerCompose @("ps", "-a")
+}
+
+function Task-StackLogs {
+    $svc = $env:STACK_SERVICE
+    if ($svc -and $svc.Trim()) {
+        Invoke-DockerCompose @("--profile", "app", "logs", "-f", $svc.Trim())
+    }
+    else {
+        Invoke-DockerCompose @("--profile", "app", "logs", "-f")
+    }
+}
+
+function Task-StackBuild {
+    Invoke-DockerCompose @("--profile", "app", "build")
+}
+
+function Assert-GhcrComposeEnv {
+    if (-not $env:GHCR_IMAGE_NAMESPACE -or -not $env:GHCR_IMAGE_NAMESPACE.Trim()) {
+        throw "Задайте `$env:GHCR_IMAGE_NAMESPACE` (владелец GitHub в lower case, как в ghcr.io/OWNER/...)."
+    }
+    if (-not $env:GHCR_IMAGE_REPO -or -not $env:GHCR_IMAGE_REPO.Trim()) {
+        throw "Задайте `$env:GHCR_IMAGE_REPO` (имя репозитория без владельца, lower case)."
+    }
+}
+
+function Task-StackPullGhcr {
+    Assert-GhcrComposeEnv
+    Invoke-DockerCompose @(
+        "-f", "docker-compose.yml", "-f", "docker-compose.ghcr.yml",
+        "--profile", "app", "pull", "backend", "web", "bot"
+    )
+}
+
+function Task-StackUpGhcr {
+    Assert-GhcrComposeEnv
+    Invoke-DockerCompose @(
+        "-f", "docker-compose.yml", "-f", "docker-compose.ghcr.yml",
+        "--profile", "app", "up", "-d", "--wait", "--no-build"
+    )
+}
+
+function Task-StackPullGhcrWsl {
+    Assert-GhcrComposeEnv
+    Invoke-DockerComposeWsl @(
+        "-f", "docker-compose.yml", "-f", "docker-compose.ghcr.yml",
+        "--profile", "app", "pull", "backend", "web", "bot"
+    )
+}
+
+function Task-StackUpGhcrWsl {
+    Assert-GhcrComposeEnv
+    Invoke-DockerComposeWsl @(
+        "-f", "docker-compose.yml", "-f", "docker-compose.ghcr.yml",
+        "--profile", "app", "up", "-d", "--wait", "--no-build"
+    )
+}
+
+function Task-StackRebuildBackendWsl {
+    Write-Host "WSL: docker compose --profile app down" -ForegroundColor Cyan
+    Invoke-DockerComposeWsl @("--profile", "app", "down")
+    Write-Host "WSL: docker compose --profile app build backend --no-cache" -ForegroundColor Cyan
+    Invoke-DockerComposeWsl @("--profile", "app", "build", "backend", "--no-cache")
+    Write-Host "Готово. Подъём: .\tasks.ps1 stack-up-wsl" -ForegroundColor Green
+}
+
+function Task-CheckBackend {
+    $r = Invoke-WebRequest -Uri "http://127.0.0.1:8000/health" -UseBasicParsing -TimeoutSec 5
+    if ($r.StatusCode -ge 200 -and $r.StatusCode -lt 300) {
+        Write-Host "OK: GET http://127.0.0.1:8000/health" -ForegroundColor Green
+    }
+    else {
+        throw "Unexpected status: $($r.StatusCode)"
+    }
+}
+
+function Task-CheckWeb {
+    $r = Invoke-WebRequest -Uri "http://127.0.0.1:3000/" -UseBasicParsing -TimeoutSec 10
+    if ($r.StatusCode -ge 200 -and $r.StatusCode -lt 500) {
+        Write-Host "OK: GET http://127.0.0.1:3000/" -ForegroundColor Green
+    }
+    else {
+        throw "Unexpected status: $($r.StatusCode)"
+    }
+}
+
+function Task-CheckBot {
+    Invoke-DockerCompose @("--profile", "app", "exec", "-T", "bot", "python", "-c", "import urllib.request; urllib.request.urlopen('http://backend:8000/health', timeout=5)")
+    Write-Host "OK: bot container -> backend /health" -ForegroundColor Green
+}
+
 function Show-Help {
     # Без @" "@: в Windows PowerShell 5.1 обратные кавычки/`$ внутри расширяемой here-string ломают разбор.
     @(
@@ -436,12 +561,23 @@ function Show-Help {
         '                          pytest tests/pg (PostgreSQL)'
         '  backend-dev             uvicorn --reload (ждёт TCP из backend/.env; см. LLMSTART_SKIP_POSTGRES_WAIT)'
         '  backend-typecheck       note about mypy'
-        '  db-up, db-down          docker compose; после db-up — миграции на llmstart и llmstart_test'
-        '  db-up-wsl               compose up -d --wait через WSL, затем ожидание порта и миграции (как db-up)'
-        '  db-stop-wsl             compose stop через WSL (wslpath + --project-directory)'
+        '  db-up, db-down          только сервис postgres + миграции на llmstart и llmstart_test с хоста'
+        '  db-up-wsl               compose up -d --wait postgres через WSL, затем миграции (как db-up)'
+        '  db-stop-wsl             compose stop через WSL (--project-directory → /mnt/... )'
         '  db-down-wsl             compose down через WSL (без -v; тома сохраняются как у db-down)'
         '  db-status               docker compose ps + TCP (хост/порт из backend/.env DATABASE_URL)'
-        '  db-reset                down -v, up --wait, миграции на обе БД'
+        '  db-reset                down -v, up postgres --wait, миграции на обе БД'
+        '  stack-up, stack-down    полный стек Docker (профиль app: backend, web, bot)'
+        '  stack-up-wsl, stack-down-wsl — то же через WSL (--project-directory → /mnt/... )'
+        '  stack-status            docker compose ps -a'
+        '  stack-logs              docker compose logs -f (опционально $env:STACK_SERVICE=web|backend|bot|postgres)'
+        '  stack-build             docker compose build --profile app'
+        '  stack-pull-ghcr, stack-up-ghcr   pull/up из GHCR (--no-build; нужны GHCR_IMAGE_NAMESPACE, GHCR_IMAGE_REPO)'
+        '  stack-pull-ghcr-wsl, stack-up-ghcr-wsl — то же через WSL (--project-directory → /mnt/... )'
+        '  stack-rebuild-backend-wsl  compose down + build backend --no-cache через WSL (/mnt/... )'
+        '  check-backend           Invoke-WebRequest http://127.0.0.1:8000/health'
+        '  check-web               Invoke-WebRequest http://127.0.0.1:3000/'
+        '  check-bot               exec в контейнере bot: HTTP к backend /health (нужен stack-up)'
         '  db-migrate, migrate-backend'
         '                          только llmstart: uv sync --extra dev; alembic upgrade head'
         '  db-migrate-test-db      только POSTGRES_TEST_DB (Alembic)'
@@ -456,7 +592,8 @@ function Show-Help {
         '  frontend-lint           pnpm lint'
         '  frontend-build          pnpm build'
         ''
-        'Env: DOCKER_COMPOSE, POSTGRES_*, POSTGRES_TEST_DB, DATABASE_URL, TEST_DATABASE_URL (see Makefile).'
+        'Env: DOCKER_COMPOSE, STACK_SERVICE (для stack-logs — имя сервиса), POSTGRES_*, POSTGRES_TEST_DB, DATABASE_URL, TEST_DATABASE_URL.'
+        'Для GHCR: GHCR_IMAGE_NAMESPACE, GHCR_IMAGE_REPO (lower case), опционально IMAGE_TAG (по умолчанию в compose — latest).'
         ''
         'Docker только в WSL: если `docker` не в PATH Windows, скрипт вызывает `wsl -e docker compose`.'
         'Свой дистрибутив: $env:DOCKER_COMPOSE = ''wsl -d Ubuntu -e docker compose'''
@@ -485,6 +622,21 @@ switch -Regex ($Task.ToLowerInvariant()) {
     "^(db-migrate-test|migrate-backend-test)$" { Task-DbMigrateTest }
     "^(db-shell)$" { Task-DbShell }
     "^(db-status)$" { Task-DbStatus }
+    "^(stack-up)$" { Task-StackUp }
+    "^(stack-up-wsl)$" { Task-StackUpWsl }
+    "^(stack-down)$" { Task-StackDown }
+    "^(stack-down-wsl)$" { Task-StackDownWsl }
+    "^(stack-status)$" { Task-StackStatus }
+    "^(stack-logs)$" { Task-StackLogs }
+    "^(stack-build)$" { Task-StackBuild }
+    "^(stack-pull-ghcr-wsl)$" { Task-StackPullGhcrWsl }
+    "^(stack-up-ghcr-wsl)$" { Task-StackUpGhcrWsl }
+    "^(stack-pull-ghcr)$" { Task-StackPullGhcr }
+    "^(stack-up-ghcr)$" { Task-StackUpGhcr }
+    "^(stack-rebuild-backend-wsl)$" { Task-StackRebuildBackendWsl }
+    "^(check-backend)$" { Task-CheckBackend }
+    "^(check-web)$" { Task-CheckWeb }
+    "^(check-bot)$" { Task-CheckBot }
     "^(frontend-install)$" { Task-FrontendInstall }
     "^(frontend-dev)$" { Task-FrontendDev }
     "^(frontend-lint)$" { Task-FrontendLint }

@@ -42,6 +42,78 @@ class StubLlmAssistant:
         return f"Echo:{len(last_user)}"
 
 
+def normalize_completion_message_content(message: dict) -> str:
+    """Достать текст из OpenAI-совместимого `choice.message` (`content` строка или список блоков)."""
+    raw = message.get("content")
+    if raw is None:
+        return ""
+    if isinstance(raw, str):
+        return raw
+    if isinstance(raw, list):
+        parts: list[str] = []
+        for block in raw:
+            if isinstance(block, str):
+                parts.append(block)
+            elif isinstance(block, dict):
+                t = block.get("text")
+                if isinstance(t, str):
+                    parts.append(t)
+                elif isinstance(block.get("content"), str):
+                    parts.append(block["content"])
+        return "".join(parts)
+    return ""
+
+
+def _text_from_reasoning_details(details: object) -> str:
+    if not isinstance(details, list):
+        return ""
+    chunks: list[str] = []
+    for item in details:
+        if not isinstance(item, dict):
+            continue
+        if item.get("type") == "reasoning.encrypted":
+            continue
+        t = item.get("text")
+        if isinstance(t, str) and t.strip():
+            chunks.append(t.strip())
+        summ = item.get("summary")
+        if isinstance(summ, str) and summ.strip():
+            chunks.append(summ.strip())
+    return "\n\n".join(chunks).strip()
+
+
+def extract_assistant_text_from_choice(choice: dict) -> str:
+    """
+    Текст ответа ассистента из элемента `choices[]` (OpenRouter / OpenAI chat.completions).
+
+    У reasoning-моделей `message.content` может быть пустым, а текст — в `reasoning` /
+    `reasoning_details` (см. OpenRouter OpenAPI: ChatAssistantMessage).
+    """
+    msg = choice.get("message")
+    if isinstance(msg, dict):
+        body = normalize_completion_message_content(msg)
+        if body.strip():
+            return body
+
+        r = msg.get("reasoning")
+        if isinstance(r, str) and r.strip():
+            return r.strip()
+
+        alt = _text_from_reasoning_details(msg.get("reasoning_details"))
+        if alt:
+            return alt
+
+        refusal = msg.get("refusal")
+        if isinstance(refusal, str) and refusal.strip():
+            return refusal.strip()
+
+    legacy = choice.get("text")
+    if isinstance(legacy, str) and legacy.strip():
+        return legacy.strip()
+
+    return ""
+
+
 def load_system_prompt(settings: Settings) -> str:
     candidates = [
         Path(settings.system_prompt_path),
@@ -142,8 +214,6 @@ class OpenRouterLlmAssistant:
 
         try:
             choice = data["choices"][0]
-            msg = choice["message"]
-            content = msg["content"]
         except (KeyError, IndexError, TypeError) as exc:
             logger.warning("llm_malformed_response")
             raise LlmInvocationError(
@@ -151,7 +221,20 @@ class OpenRouterLlmAssistant:
                 error_code="LLM_BAD_GATEWAY",
             ) from exc
 
-        if not isinstance(content, str) or not content.strip():
+        if not isinstance(choice, dict):
+            logger.warning("llm_choice_not_object type=%s", type(choice).__name__)
+            raise LlmInvocationError(http_status=502, error_code="LLM_BAD_GATEWAY")
+
+        content = extract_assistant_text_from_choice(choice)
+        if not content.strip():
+            msg = choice.get("message")
+            keys = sorted(msg.keys()) if isinstance(msg, dict) else None
+            logger.warning(
+                "llm_empty_or_unparsed_content choice_keys=%s message_keys=%s finish_reason=%s",
+                sorted(choice.keys()),
+                keys,
+                choice.get("finish_reason"),
+            )
             raise LlmInvocationError(http_status=502, error_code="LLM_BAD_GATEWAY")
 
         return content
