@@ -30,10 +30,10 @@
 | 2 | Backend API | Полный API: scaffold, LLM, прогресс, поток | ✅ Done | [tasklist-backend](tasks/tasklist-backend.md) |
 | 3 | База данных | PostgreSQL, схема, миграции | ✅ Done | [tasklist-database](tasks/tasklist-database.md) |
 | 4 | Реализация Frontend | Веб-кабинет студента и преподавателя | ✅ Done | [tasklist-frontend](tasks/tasklist-frontend.md) |
-| 5 | Интеграция клиентов | Бот и веб работают через backend API | 🚧 In Progress | [tasklist-backend](tasks/tasklist-backend.md) (задача 07) + [tasklist-frontend](tasks/tasklist-frontend.md) |
-| 6 | Dev&Ops & Production | CI/CD, контейнеризация, production-deploy | 📋 Planned | [tasklist-devops](tasks/tasklist-devops.md) |
+| 5 | Интеграция клиентов | Бот и веб работают через backend API | ✅ Done | [tasklist-backend](tasks/tasklist-backend.md) (задача 07) + [tasklist-frontend](tasks/tasklist-frontend.md) |
+| 6 | Dev&Ops & Production | CI/CD, контейнеризация, production-deploy | 🚧 In Progress | [tasklist-devops](tasks/tasklist-devops.md) |
 
-**Примечание к ссылкам:** отдельный файл `docs/tasks/tasklist-bot.md` в репозитории пока не ведётся. Итерация **1:** код и сценарии — каталог [`bot/`](../bot/). Итерация **5:** бот как клиент API закрыт в [tasklist-backend](tasks/tasklist-backend.md) (задача **07**); веб — [tasklist-frontend](tasks/tasklist-frontend.md). Итерация **6:** детализация — [tasklist-devops](tasks/tasklist-devops.md) (подготовительные итерации: локальный compose, GHCR); уже есть базовый CI в [`.github/workflows/`](../.github/workflows/).
+**Примечание к ссылкам:** отдельный файл `docs/tasks/tasklist-bot.md` в репозитории пока не ведётся. Итерация **1:** код и сценарии — каталог [`bot/`](../bot/). Итерация **5:** закрыта по DoD в [`plan.md`](plan.md) §итерация 5 — бот через API ([tasklist-backend](tasks/tasklist-backend.md), задача **07**), веб на **`/api/v1/`** ([tasklist-frontend](tasks/tasklist-frontend.md)), сквозной сценарий «бот → данные в вебе». Итерация **6:** [tasklist-devops](tasks/tasklist-devops.md) — **итерации 1–2 закрыты** (локальный compose, образы в GHCR после зелёного CI); базовый CI — [`.github/workflows/ci.yml`](../.github/workflows/ci.yml); **полный DoD** итерации 6 (в т.ч. воспроизводимый production-deploy) — ещё нет.
 
 ---
 
@@ -64,7 +64,7 @@
 
 **Цель:** реализовать полный backend API — структура проекта, конфигурация, диалог с LLM, прогресс и поток.
 
-**Статус по [tasklist-backend](tasks/tasklist-backend.md):** итерация закрыта, включая задачу **08** (линт, тесты, GitHub Actions CI, единый `Makefile`). Задача **07** относится к итерации 5 (бот как клиент API) и ведётся по своему tasklist.
+**Статус по [tasklist-backend](tasks/tasklist-backend.md):** итерация **2** (Backend API в смысле `plan.md`) закрыта задачами **01–06** и **08** (в т.ч. линт, тесты, GitHub Actions CI, `Makefile`). Задача **07** (бот как клиент API) закрыта и входит в **итерацию 5** ниже — **✅ Done**.
 
 **Критерии завершения (DoD):**
 
@@ -135,9 +135,9 @@
 
 ---
 
-### Итерация 5: Интеграция клиентов 🚧
+### Итерация 5: Интеграция клиентов ✅
 
-**Статус:** по коду оба клиента ходят в **`/api/v1/`** (бот — см. [tasklist-backend](tasks/tasklist-backend.md) задача **07** ✅; веб — итерация **4** ✅). Итерация **5** остаётся **в работе**, пока явно не подтверждён сквозной DoD ниже (в т.ч. сценарий «бот → данные в вебе») и не зафиксировано закрытие в отдельном summary при появлении процесса приёмки.
+**Статус:** итерация **закрыта**. Оба клиента работают через **`/api/v1/`** (бот — [tasklist-backend](tasks/tasklist-backend.md), задача **07** ✅; веб — [tasklist-frontend](tasks/tasklist-frontend.md), итерация **4** ✅). Выполнен сквозной DoD: Telegram-бот и веб используют одно ядро; сценарий «студент фиксирует результат в боте → данные видны в веб-интерфейсе» подтверждён; клиенты не обращаются к LLM и БД напрямую.
 
 **Цель:** подключить бот и веб к backend API — оба клиента работают через ядро, без собственной логики.
 
@@ -156,13 +156,15 @@
 
 ---
 
-### Итерация 6: Dev&Ops & Production
+### Итерация 6: Dev&Ops & Production 🚧
 
-**Частично уже есть:** в репозитории настроен [GitHub Actions CI](../.github/workflows/ci.yml) — линт/сборка `frontend/web`, ruff для `bot/` и `backend`, pytest `backend/tests/pg` с сервисом PostgreSQL. Локальный полный стек в Docker — [итерация 1 в tasklist-devops](tasks/tasklist-devops.md#iteration-1-local-stack) и [docs/tech/docker-compose-local.md](tech/docker-compose-local.md). Полный DoD итерации (в т.ч. воспроизводимый production-deploy) — **ещё не закрыт**; пошагово — весь [tasklist-devops](tasks/tasklist-devops.md).
+**Уже сделано по [tasklist-devops](tasks/tasklist-devops.md):** [итерация 1](tasks/tasklist-devops.md#iteration-1-local-stack) (локальный compose, Dockerfile, `Makefile` / `tasks.ps1`, проверки компонентов, [docker-compose-local.md](tech/docker-compose-local.md)) и [итерация 2](tasks/tasklist-devops.md#iteration-2-ghcr) (GHCR, [`docker-compose.ghcr.yml`](../docker-compose.ghcr.yml), workflow после зелёного CI). [GitHub Actions CI](../.github/workflows/ci.yml) — линт/сборка `frontend/web`, ruff для `bot/` и `backend`, pytest `backend/tests/pg` с PostgreSQL.
+
+**Ещё не закрыто:** полный DoD итерации (в т.ч. **воспроизводимый production-deploy**, единый CD-пайплайн, прод-секреты и observability по `vision.md`) — см. раздел «Вне scope» в [tasklist-devops](tasks/tasklist-devops.md).
 
 **Цель:** контейнеризовать систему, настроить CI/CD и выполнить production-deploy.
 
-⚡ **Параллельность:** базовые задачи (CI, секреты, Dockerfile) можно вести параллельно с итерациями 4–5, не блокируя их.
+⚡ **Параллельность:** базовые задачи (CI, секреты, Dockerfile) можно было вести параллельно с итерациями 4–5; далее — параллельно с завершением итерации 6.
 
 **Критерии завершения (DoD):**
 

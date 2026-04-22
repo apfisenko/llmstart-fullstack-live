@@ -20,7 +20,7 @@ COPY backend/migrations ./migrations
 COPY bot/prompts ./bot/prompts
 
 RUN --mount=type=cache,target=/root/.cache/uv \
-    uv sync --frozen --extra dev
+    uv sync --frozen
 
 COPY devops/backend/docker-entrypoint.sh /docker-entrypoint.sh
 # На Windows в репозитории часто CRLF — в Linux shebang ломается («no such file» для /bin/sh\r).

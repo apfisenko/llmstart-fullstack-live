@@ -38,7 +38,7 @@ docker build -f devops/web/Dockerfile .
 
 ## GHCR (образы из CI)
 
-После merge в **`main`** или **`master`** workflow [`.github/workflows/ghcr.yml`](../.github/workflows/ghcr.yml) собирает три образа и пушит в **GitHub Container Registry**.
+После **успешного CI** на **`main`** или **`master`** (или при ручном запуске) workflow [`.github/workflows/ghcr.yml`](../.github/workflows/ghcr.yml) собирает три образа и пушит в **GitHub Container Registry**.
 
 ### Имена и теги
 

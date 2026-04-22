@@ -89,14 +89,79 @@ function Get-RepoRootWslPath {
     )
 }
 
+function Import-GhcrVarsFromRootDotEnv {
+    # docker compose внутри WSL не видит $env: из PowerShell; подставляем из корневого .env (как у compose на хосте).
+    $path = Join-Path $RepoRoot ".env"
+    if (-not (Test-Path -LiteralPath $path)) {
+        return
+    }
+    $keys = @('LLMSTART_GHCR_IMAGE_ROOT', 'IMAGE_TAG', 'BACKEND_API_CLIENT_TOKEN')
+    foreach ($line in Get-Content -LiteralPath $path -Encoding utf8) {
+        $trimmed = $line.Trim()
+        if ($trimmed.Length -eq 0 -or $trimmed.StartsWith('#')) {
+            continue
+        }
+        $eq = $trimmed.IndexOf('=')
+        if ($eq -lt 1) {
+            continue
+        }
+        $key = $trimmed.Substring(0, $eq).Trim()
+        if ($key -notin $keys) {
+            continue
+        }
+        $current = [Environment]::GetEnvironmentVariable($key, 'Process')
+        if ($null -ne $current -and $current.Length -gt 0) {
+            continue
+        }
+        $val = $trimmed.Substring($eq + 1).Trim()
+        if (
+            ($val.Length -ge 2) -and (
+                ($val.StartsWith('"') -and $val.EndsWith('"')) -or
+                ($val.StartsWith("'") -and $val.EndsWith("'"))
+            )
+        ) {
+            $val = $val.Substring(1, $val.Length - 2)
+        }
+        Set-Item -Path "env:$key" -Value $val
+    }
+}
+
 function Invoke-DockerComposeWsl {
-    param([string[]] $ArgumentList)
+    param(
+        [string[]] $ArgumentList,
+        [switch] $ForwardComposeInterpolationEnv
+    )
     if ($ArgumentList.Count -lt 1) {
         throw "Invoke-DockerComposeWsl: укажите аргументы compose (например stop, down)"
     }
     $wslRoot = Get-RepoRootWslPath
-    # Один аргумент, чтобы путь с пробелами/Unicode не разъезжался у wsl.exe.
-    & wsl -e docker compose "--project-directory=$wslRoot" @ArgumentList
+    if ($ForwardComposeInterpolationEnv) {
+        Import-GhcrVarsFromRootDotEnv
+        $ghcrRoot = [Environment]::GetEnvironmentVariable('LLMSTART_GHCR_IMAGE_ROOT', 'Process')
+        if ([string]::IsNullOrWhiteSpace($ghcrRoot)) {
+            throw @"
+Не задан LLMSTART_GHCR_IMAGE_ROOT для docker-compose.ghcr.yml.
+
+Создайте в корне репозитория файл .env по шаблону .env.ghcr.example (LLMSTART_GHCR_IMAGE_ROOT=ghcr.io/<owner>/<repo>)
+или в этой сессии PowerShell выполните:
+  `$env:LLMSTART_GHCR_IMAGE_ROOT = 'ghcr.io/<owner>/<repo>'
+
+Для WSL переменные из PowerShell передаются в docker compose явно (см. Invoke-DockerComposeWsl -ForwardComposeInterpolationEnv).
+"@
+        }
+        $envPairs = [System.Collections.Generic.List[string]]::new()
+        foreach ($k in @('LLMSTART_GHCR_IMAGE_ROOT', 'IMAGE_TAG', 'BACKEND_API_CLIENT_TOKEN')) {
+            $v = [Environment]::GetEnvironmentVariable($k, 'Process')
+            if ($null -ne $v -and $v.Length -gt 0) {
+                $envPairs.Add("${k}=${v}")
+            }
+        }
+        # Один аргумент --project-directory=..., чтобы путь с пробелами/Unicode не разъезжался у wsl.exe.
+        & wsl -e env @envPairs docker compose "--project-directory=$wslRoot" @ArgumentList
+    }
+    else {
+        & wsl -e docker compose "--project-directory=$wslRoot" @ArgumentList
+    }
     if ($LASTEXITCODE -ne 0 -and $null -ne $LASTEXITCODE) {
         exit $LASTEXITCODE
     }
@@ -452,7 +517,7 @@ function Task-StackUpGhcr {
 }
 
 function Task-StackUpGhcrWsl {
-    Invoke-DockerComposeWsl @("-f", "docker-compose.ghcr.yml", "--profile", "app", "up", "-d", "--wait")
+    Invoke-DockerComposeWsl -ForwardComposeInterpolationEnv @("-f", "docker-compose.ghcr.yml", "--profile", "app", "up", "-d", "--wait")
 }
 
 function Task-StackDown {
@@ -468,7 +533,7 @@ function Task-StackDownGhcr {
 }
 
 function Task-StackDownGhcrWsl {
-    Invoke-DockerComposeWsl @("-f", "docker-compose.ghcr.yml", "--profile", "app", "down")
+    Invoke-DockerComposeWsl -ForwardComposeInterpolationEnv @("-f", "docker-compose.ghcr.yml", "--profile", "app", "down")
 }
 
 function Task-StackStatus {
@@ -545,7 +610,7 @@ function Show-Help {
         '  stack-up, stack-down    полный стек Docker (профиль app: backend, web, bot)'
         '  stack-up-wsl, stack-down-wsl — то же через WSL (--project-directory → /mnt/... )'
         '  stack-up-ghcr, stack-down-ghcr — стек из образов GHCR (-f docker-compose.ghcr.yml; LLMSTART_GHCR_IMAGE_ROOT в .env)'
-        '  stack-up-ghcr-wsl, stack-down-ghcr-wsl — то же через WSL (см. docs/tech/docker-compose-ghcr.md)'
+        '  stack-up-ghcr-wsl, stack-down-ghcr-wsl — то же через WSL; LLMSTART_GHCR_IMAGE_ROOT из корневого .env или $env: (передаётся в WSL явно)'
         '  stack-status            docker compose ps -a'
         '  stack-logs              docker compose logs -f (опционально $env:STACK_SERVICE=web|backend|bot|postgres)'
         '  stack-build             docker compose build --profile app'

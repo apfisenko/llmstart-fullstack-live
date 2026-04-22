@@ -1,9 +1,11 @@
 # Сборка и публикация образов backend / bot / web в GHCR.
-# Триггер: default branch (main/master) и ручной запуск. Теги: latest + sha-<short>.
+# После успешного CI на main/master (или вручную). Теги: latest + sha-<short>.
 name: GHCR images
 
 on:
-  push:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
     branches: [main, master]
   workflow_dispatch:
 
@@ -12,14 +14,16 @@ permissions:
   packages: write
 
 concurrency:
-  group: ghcr-${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  # По SHA коммита: не отменять публикацию предыдущего зелёного CI при быстром merge следующего.
+  group: ghcr-${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_sha || github.sha }}
+  cancel-in-progress: false
 
 env:
   REGISTRY: ghcr.io
 
 jobs:
   build-push:
+    if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-latest
     timeout-minutes: 60
     strategy:
@@ -34,6 +38,8 @@ jobs:
             file: devops/web/Dockerfile
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_sha || github.sha }}
 
       - name: Image root (lowercase for GHCR)
         id: img
@@ -52,7 +58,7 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      # Workflow срабатывает только на main/master — публикуем latest + sha (короткий) на каждый прогон.
+      # На main/master после зелёного CI (или вручную) — latest + sha (короткий).
       - name: Docker metadata (tags)
         id: meta
         uses: docker/metadata-action@v5

@@ -14,7 +14,7 @@
 
 | Задача | Описание | Статус | Документы |
 |--------|----------|--------|-----------|
-| Итерация 1 | Локальный полный стек: `devops/`, Dockerfile, корневой compose, команды, инструкция, обновление проектных docs | 📋 | [блок](#iteration-1-local-stack) |
+| Итерация 1 | Локальный полный стек: `devops/`, Dockerfile, корневой compose, команды, инструкция, обновление проектных docs | ✅ | [блок](#iteration-1-local-stack) |
 | Итерация 2 | GitHub Actions: сборка и push образов в GHCR; compose из registry; проверка локального запуска | ✅ | [блок](#iteration-2-ghcr) |
 
 ---
@@ -27,15 +27,15 @@
 
 ### Состав работ
 
-- [ ] Спроектировать и описать в `devops/README.md` структуру артефактов: базовый каталог `devops/`, вложенность по сервисам (`devops/backend/`, `devops/bot/`, `devops/web/` — Dockerfile и `.dockerignore` рядом); связь с корневым [docker-compose.yml](../../docker-compose.yml).
-- [ ] Зафиксировать схему для **PostgreSQL**: сохранить init/volume из [docker/postgres/](../../docker/postgres/) или перенести в `devops/postgres/` — **одна** согласованная раскладка без дублирования.
-- [ ] Добавить **Dockerfile** и **.dockerignore** для `backend/`, `bot/`, `frontend/web/` (Next.js — multi-stage при необходимости; Python — uv; не коммитить секреты).
-- [ ] Расширить **корневой** `docker-compose.yml`: полный стек в **одном** файле; сервис `postgres` — единый источник правды для режима «только БД» и для полного стека.
-- [ ] Обеспечить **отдельный запуск только БД** без приложений: например **profiles** в Compose (приложения в профиле `app`, `postgres` доступен без профиля или по профилю `db`) и/или документированная команда вида `docker compose up -d postgres`; цели `db-up` / `db-down` остаются про «только Postgres».
-- [ ] Расширить [tasks.ps1](../../tasks.ps1) и [Makefile](../../Makefile): сохранить удобство `db-up` / `db-down`; добавить цели полного стека — подъём/остановка, `status`, `logs` (все и по сервису); **отдельные проверки работоспособности каждого компонента** — **backend** (например HTTP `/health` или OpenAPI), **frontend/web** (ответ HTTP главной/next-маршрута или готовности контейнера), **bot** (инициализация процесса/доступность token-конфига или health-скрипт по согласованию), имена целей согласованы между `tasks.ps1` и `Makefile`.
-- [ ] Ревью docker-конфигурации по skill **`docker-expert`** (замечания применить или кратко зафиксировать).
-- [ ] Создать инструкцию по локальному Docker Compose (например `docs/tech/docker-compose-local.md`): env-файлы, порядок `up`, миграции; для каждого из **backend / frontend / bot** — как запустить проверку работоспособности и ожидаемый результат.
-- [ ] Обновить проектную документацию: [architecture.md](../architecture.md), [onboarding.md](../onboarding.md), при необходимости [README.md](../../README.md); в [plan.md](../plan.md) — ссылка на этот tasklist в блоке итерации 6.
+- [x] Спроектировать и описать в `devops/README.md` структуру артефактов: базовый каталог `devops/`, вложенность по сервисам (`devops/backend/`, `devops/bot/`, `devops/web/` — Dockerfile; контекст сборки — корень, единый [`.dockerignore`](../../.dockerignore)); связь с корневым [docker-compose.yml](../../docker-compose.yml).
+- [x] Зафиксировать схему для **PostgreSQL**: init в [`devops/postgres/`](../../devops/postgres/); каталог [`docker/postgres/`](../../docker/postgres/) — редирект в README без дублирования SQL.
+- [x] Добавить **Dockerfile** для backend, bot, web (Next.js multi-stage; Python — uv; секреты не в образах). **`.dockerignore`** — один в корне репозитория (см. `devops/README.md`).
+- [x] Расширить **корневой** `docker-compose.yml`: полный стек в **одном** файле; сервис `postgres` — единый источник правды для режима «только БД» и для полного стека.
+- [x] Обеспечить **отдельный запуск только БД** без приложений: профиль **`app`** для приложений; `postgres` без профиля; `db-up` / `db-down` — только Postgres + миграции с хоста по документации.
+- [x] Расширить [tasks.ps1](../../tasks.ps1) и [Makefile](../../Makefile): `stack-up` / `stack-down`, `stack-status`, `stack-logs`, `check-backend`, `check-web`, `check-bot` (согласованные имена).
+- [x] Ревью docker-конфигурации по skill **`docker-expert`**: замечания и итог — секция «Docker review notes» в [`devops/README.md`](../../devops/README.md).
+- [x] Создать инструкцию [docker-compose-local.md](../tech/docker-compose-local.md): env, порядок `up`, миграции, проверки backend / web / bot.
+- [x] Обновить проектную документацию: [architecture.md](../architecture.md), [onboarding.md](../onboarding.md), [README.md](../../README.md); в [plan.md](../plan.md) — итерация 6 и ссылки на этот tasklist.
 
 ### Definition of Done
 
@@ -88,7 +88,7 @@
 
 **Для пользователя (user-check)**
 
-- После merge в основную ветку образы появляются в GHCR и их можно найти по инструкции.
+- После успешного CI на основной ветке образы появляются в GHCR и их можно найти по инструкции.
 - Склонировав репозиторий и задав теги env (если нужно), можно поднять стек **без** локальной сборки приложений.
 
 ### Артефакты (целевые)

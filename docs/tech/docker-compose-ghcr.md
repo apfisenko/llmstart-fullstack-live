@@ -1,6 +1,6 @@
 # Стек из образов GHCR
 
-Публикация образов выполняется workflow [`.github/workflows/ghcr.yml`](../../.github/workflows/ghcr.yml) при push в **`main`** или **`master`** (и вручную через **Actions → GHCR images → Run workflow**).
+Публикация образов выполняется workflow [`.github/workflows/ghcr.yml`](../../.github/workflows/ghcr.yml) после **успешного** завершения workflow **CI** на **`main`** или **`master`** (и вручную через **Actions → GHCR images → Run workflow**).
 
 ## Имена образов
 
@@ -48,7 +48,7 @@ make stack-up-ghcr
 make stack-down-ghcr
 ```
 
-**Docker через WSL (Windows):** если в PowerShell нет `docker` в PATH, используйте терминал WSL или цели **`make stack-up-ghcr`** с `DOCKER_COMPOSE="wsl -e docker compose"` (как в [Makefile](../../Makefile) для `db-up`), либо **`.\tasks.ps1 stack-up-ghcr-wsl`** — тот же механизм `--project-directory` в `/mnt/...`, что у `stack-up-wsl`.
+**Docker через WSL (Windows):** если в PowerShell нет `docker` в PATH, используйте терминал WSL или цели **`make stack-up-ghcr`** с `DOCKER_COMPOSE="wsl -e docker compose"` (как в [Makefile](../../Makefile) для `db-up`), либо **`.\tasks.ps1 stack-up-ghcr-wsl`** — тот же механизм `--project-directory` в `/mnt/...`, что у `stack-up-wsl`. Скрипт читает **`LLMSTART_GHCR_IMAGE_ROOT`** (и при необходимости **`IMAGE_TAG`**, **`BACKEND_API_CLIENT_TOKEN`**) из корневого **`.env`** или из **`$env:`** в PowerShell и передаёт их в `wsl` через `env`, потому что переменные сессии PowerShell сами в WSL не попадают.
 
 Проверки **`check-backend`** / **`check-web`** на localhost те же; **`check-bot`** выполняйте после подъёма стека, когда в PATH доступен `docker compose` к тому же проекту (или `docker exec` в контейнер `llmstart-bot`).
 

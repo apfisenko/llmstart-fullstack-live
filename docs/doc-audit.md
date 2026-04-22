@@ -2,9 +2,9 @@
 
 **Цель:** чтобы человек или AI-агент мог войти в репозиторий, понять границы системы, поднять окружение и проверить работоспособность за один сеанс.
 
-**Дата фиксации аудита:** 2026-04-17.
+**Дата фиксации аудита:** 2026-04-17 (актуализация статусов roadmap / DevOps: 2026-04-22).
 
-**Связанные артефакты:** [README.md](../README.md), [docs/onboarding.md](onboarding.md), [docs/architecture.md](architecture.md), [docs/plan.md](plan.md), [docs/vision.md](vision.md), [docs/data-model.md](data-model.md), [docs/tech/api-contracts.md](tech/api-contracts.md), [Makefile](../Makefile), [tasks.ps1](../tasks.ps1), [backend/README.md](../backend/README.md), [bot/README.md](../bot/README.md), [frontend/web/README.md](../frontend/web/README.md), [frontend/web/.gitignore](../frontend/web/.gitignore), [.github/workflows/ci.yml](../.github/workflows/ci.yml).
+**Связанные артефакты:** [README.md](../README.md), [docs/onboarding.md](onboarding.md), [docs/architecture.md](architecture.md), [docs/plan.md](plan.md), [docs/vision.md](vision.md), [docs/data-model.md](data-model.md), [docs/tech/api-contracts.md](tech/api-contracts.md), [Makefile](../Makefile), [tasks.ps1](../tasks.ps1), [backend/README.md](../backend/README.md), [bot/README.md](../bot/README.md), [frontend/web/README.md](../frontend/web/README.md), [frontend/web/.gitignore](../frontend/web/.gitignore), [.github/workflows/ci.yml](../.github/workflows/ci.yml), [.github/workflows/ghcr.yml](../.github/workflows/ghcr.yml), [docs/tasks/tasklist-devops.md](tasks/tasklist-devops.md).
 
 ---
 

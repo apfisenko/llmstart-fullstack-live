@@ -41,6 +41,7 @@ flowchart LR
 
 - [Онбординг разработчика](docs/onboarding.md) — клонирование, env, проверка стека, CI-подобные команды
 - [Локальный Docker Compose](docs/tech/docker-compose-local.md) — только Postgres или полный стек (`stack-up`), проверки сервисов
+- [Стек из образов GHCR](docs/tech/docker-compose-ghcr.md) — запуск без локальной сборки образов приложений (`docker-compose.ghcr.yml`)
 - [Архитектура (обзор)](docs/architecture.md)
 - [Идея продукта](docs/idea.md)
 - [Архитектурное видение](docs/vision.md)
@@ -218,6 +219,17 @@ make run
 6. Ответ бота «Не удалось получить ответ» при **502** от backend: смотрите лог **uvicorn** — строка `llm_upstream_4xx` с подсказкой от провайдера. Обычно это неверный или пустой **`OPENROUTER_API_KEY`**, лимит, имя модели или блокировка исходящего HTTPS (в т.ч. **`PROXY_URL`** в `backend/.env` для вызова OpenRouter).
 
 Запускайте бота из репозитория через **`uv run python -m bot.main`** (как в `make run`), а не глобальный Python с устаревшими пакетами в `AppData\Roaming\Python`.
+
+### Локальный полный стек из образов GHCR
+
+Поднимаете **PostgreSQL, backend, web и bot** из образов в **GitHub Container Registry** — без `docker build` приложений на машине. Сборка и push выполняются workflow [`.github/workflows/ghcr.yml`](.github/workflows/ghcr.yml) после **успешного CI** на **`main`** / **`master`** (или вручную в Actions). Имена образов и теги — [devops/README.md](devops/README.md), подробности и логин при приватных пакетах — [docs/tech/docker-compose-ghcr.md](docs/tech/docker-compose-ghcr.md).
+
+1. **Корень образов** в нижнем регистре: `ghcr.io/<владелец>/<репозиторий>` (как в GitHub после публикации пакетов). Задайте переменную **`LLMSTART_GHCR_IMAGE_ROOT`** и при необходимости **`IMAGE_TAG`** (`latest` по умолчанию; ещё бывают теги вида `sha-<short>`). Удобно скопировать [`.env.ghcr.example`](.env.ghcr.example) в **корневой `.env`** (файл не коммитится) или экспортировать переменные в shell перед `compose up`.
+2. **Секреты и конфиг**, как для обычного полного стека в Docker: подготовьте **`backend/.env`** и **`bot/.env`** по шаблонам из разделов [Backend API](#backend-api) и [Telegram-бот](#telegram-бот). Если в `backend/.env` включён **`BACKEND_API_CLIENT_TOKEN`**, задайте то же значение в окружении хоста и при необходимости в корневом **`.env`**, чтобы подставилось в сервис **web** (см. таблицу в [docs/tech/docker-compose-local.md](docs/tech/docker-compose-local.md)).
+3. **Запуск из корня репозитория:** **`make stack-up-ghcr`** или **`.\tasks.ps1 stack-up-ghcr`**. Используется файл [`docker-compose.ghcr.yml`](docker-compose.ghcr.yml). Остановка профиля приложений: **`make stack-down-ghcr`** / **`.\tasks.ps1 stack-down-ghcr`**.
+4. **Windows, Docker только в WSL:** **`.\tasks.ps1 stack-up-ghcr-wsl`** и **`stack-down-ghcr-wsl`** (аналогично `stack-up-wsl`; см. [docker-compose-ghcr.md](docs/tech/docker-compose-ghcr.md)).
+
+После старта: веб **http://127.0.0.1:3000**, API **http://127.0.0.1:8000** (`/health`, `/docs`). Проверки: **`make check-backend`**, **`make check-web`**, **`make check-bot`** или те же цели в **`tasks.ps1`**.
 
 ### Полный стек (бот + backend + CI)
 
