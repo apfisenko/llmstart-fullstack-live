@@ -60,8 +60,15 @@ class Config(BaseSettings):
     )
     backend_api_client_token: str = ""
     backend_request_timeout: int = 120
-    #: HTTP-таймаут aiogram к Telegram Bot API (секунды); при медленном/блокируемом api.telegram.org увеличьте или задайте PROXY_URL.
-    telegram_request_timeout: float = Field(default=120.0, ge=5.0, le=600.0)
+    telegram_request_timeout: float = Field(
+        default=120.0,
+        ge=5.0,
+        le=600.0,
+        description=(
+            "HTTP-таймаут aiogram к Telegram Bot API (сек). "
+            "При медленном api.telegram.org увеличьте или задайте PROXY_URL."
+        ),
+    )
     cohort_id: Optional[UUID] = Field(
         default=None,
         description="UUID потока (cohort) в backend",

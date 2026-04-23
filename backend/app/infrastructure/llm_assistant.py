@@ -43,7 +43,7 @@ class StubLlmAssistant:
 
 
 def normalize_completion_message_content(message: dict) -> str:
-    """Достать текст из OpenAI-совместимого `choice.message` (`content` строка или список блоков)."""
+    """Текст из OpenAI-совместимого choice.message (content: str или список блоков)."""
     raw = message.get("content")
     if raw is None:
         return ""

@@ -91,7 +91,8 @@ def create_app(
                 app.state.http_client = client
                 app.state.llm = OpenRouterLlmAssistant(resolved_settings, client)
                 logger.info(
-                    "llm_httpx_client openrouter_timeout=%s proxy_set=%s (trust_env off for system proxy)",
+                    "llm_httpx_client openrouter_timeout=%s proxy_set=%s "
+                    "(trust_env off for system proxy)",
                     resolved_settings.openrouter_timeout,
                     bool(proxies),
                 )

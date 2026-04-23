@@ -44,7 +44,8 @@ async def main() -> None:
                 "(POST /api/v1/assistant/guest/*)."
             )
         logger.info("Bot started backend_base=%s", config.resolved_backend_base_url())
-        # Иначе при ранее включённом webhook long polling не получает апдейты (в логах только Start polling).
+        # Иначе при включённом webhook long polling не получает апдейты
+        # (в логах только Start polling).
         await bot.delete_webhook(drop_pending_updates=False)
         logger.info("Telegram webhook cleared; using long polling")
 
@@ -60,16 +61,18 @@ async def main() -> None:
                 raise
             except TelegramConflictError:
                 logger.critical(
-                    "TelegramConflictError: с этим токеном уже идёт long polling в другом процессе. "
-                    "Остановите локальный бот (например .\\tasks.ps1 bot-dev), другой контейнер или "
-                    "второй инстанс в другом окружении — иначе контейнер будет уходить в restart."
+                    "TelegramConflictError: с этим токеном уже идёт long polling "
+                    "в другом процессе. Остановите локальный бот (например .\\tasks.ps1 bot-dev), "
+                    "другой контейнер или второй инстанс в другом окружении — "
+                    "иначе контейнер будет уходить в restart."
                 )
                 raise
             except TelegramNetworkError as exc:
                 logger.warning(
                     "TelegramNetworkError (доступ к api.telegram.org): %s. Повтор через 10 с. "
                     "При постоянных сбоях из Docker: прокси на хосте → "
-                    "PROXY_URL=http://host.docker.internal:<порт> в bot/.env (см. bot/.env.example).",
+                    "PROXY_URL=http://host.docker.internal:<порт> в bot/.env "
+                    "(см. bot/.env.example).",
                     exc,
                 )
                 await asyncio.sleep(10)
