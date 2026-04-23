@@ -48,10 +48,11 @@ jobs:
           cd backend && uv sync --extra dev
 
       - name: Frontend (lint + build)
+        working-directory: frontend/web
         run: |
-          cd frontend/web && pnpm install --frozen-lockfile
-          cd frontend/web && pnpm lint
-          cd frontend/web && pnpm build
+          pnpm install --frozen-lockfile
+          pnpm lint
+          pnpm build
 
       - name: Lint
         run: |
