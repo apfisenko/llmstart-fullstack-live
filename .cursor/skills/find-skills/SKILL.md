@@ -6,8 +6,8 @@ description: >-
   или перед крупными изменениями в API, тестах, FastAPI, UI (shadcn) или
   Next.js/Vercel (`vercel-react-best-practice`, маршруты App Router —
   `nextjs-app-router-patterns`); при неочевидных багах и расхождениях окружений —
-  `sharp-edges`; для CI в GitHub — `github-actions-templates`; для Docker и
-  Compose — `docker-expert`.
+  `sharp-edges`; для CI в GitHub (YAML) — `github-actions-templates`, из терминала
+  — `gh-cli`; для Docker и Compose — `docker-expert`.
 ---
 
 # Поиск skills в проекте

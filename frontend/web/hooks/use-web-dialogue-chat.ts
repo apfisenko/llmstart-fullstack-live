@@ -132,10 +132,15 @@ export function useWebDialogueChat(
       );
       const raw = await res.text();
       if (!res.ok) {
+        const detail = parseApiErrorMessage(raw);
         if (res.status === 502 || res.status === 503) {
-          setSendError("Ассистент временно недоступен. Попробуйте позже.");
+          setSendError(
+            detail && detail !== "Произошла ошибка"
+              ? `Ассистент временно недоступен (${detail})`
+              : "Ассистент временно недоступен. Попробуйте позже.",
+          );
         } else {
-          setSendError(parseApiErrorMessage(raw));
+          setSendError(detail);
         }
         return;
       }

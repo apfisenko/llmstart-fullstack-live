@@ -1,0 +1,33 @@
+# Скопировать в .env в корне репозитория и/или в backend/.env.
+# Settings загружает оба файла: (".env", "../.env") относительно cwd процесса — обычно запуск из backend/ (см. app/config.py).
+
+# --- База данных ---
+# Если переменная не задана или пустая — SQLite ./llmstart_local.sqlite в текущем каталоге процесса.
+# Для прод и Alembic: задайте PostgreSQL, например:
+# DATABASE_URL=postgresql+asyncpg://postgres:postgres@127.0.0.1:5432/llmstart
+DATABASE_URL=postgresql+asyncpg://llmstart:llmstart@127.0.0.1:5432/llmstart
+# --- Процесс HTTP-сервера ---
+BACKEND_HOST=127.0.0.1
+BACKEND_PORT=8000
+LOG_LEVEL=INFO
+
+# Общий секрет клиента (бот/веб) для маршрутов /api/v1/*. Если пусто или не задано — Bearer не проверяется (удобно для локалки).
+BACKEND_API_CLIENT_TOKEN=
+
+# --- LLM (OpenAI-совместимый Chat Completions, по умолчанию OpenRouter) ---
+# Имена совпадают с корневым .env: один файл для бота и backend.
+# Пустой ключ → заглушка LLM (достаточно для /health и тестов); для реальных ответов модели задайте ключ.
+TELEGRAM_TOKEN=8634533420:AAEcea2zrvemCy_H6uYBkmx0O_pHxhfI7yk
+#OPENROUTER_API_KEY=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
+OPENROUTER_API_KEY=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
+OPENROUTER_BASE_URL=https://openrouter.ai/api/v1
+#OPENROUTER_MODEL=qwen/qwen3.6-plus:free
+#OPENROUTER_MODEL=qwen/qwen3-coder:free
+OPENROUTER_MODEL=google/gemma-4-31b-it:free
+OPENROUTER_TIMEOUT=60
+
+# Системный промпт ассистента: путь относительно текущего рабочего каталога процесса или абсолютный.
+SYSTEM_PROMPT_PATH=bot/prompts/system.txt
+
+# Опционально: прокси для исходящих HTTPS-запросов к провайдеру.
+PROXY_URL=

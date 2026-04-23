@@ -5,6 +5,7 @@ description: >-
   артефакты, permissions, secrets, concurrency, reusable workflows, сервисы
   (Postgres/Redis) в CI. Используй при `.github/workflows`, CI/CD, линтерах и
   тестах в GitHub, когда пользователь упоминает GHA, GitHub Actions или CI.
+  Для терминала (просмотр run, pr, `gh api`) — skill `gh-cli`.
 ---
 
 # GitHub Actions — шаблоны
@@ -50,3 +51,5 @@ description: >-
 ## Дополнительно
 
 - OIDC в облако вместо долгоживущих ключей в секретах — когда провайдер поддерживает.
+- Работа с прогонами и PR из CLI: skill **`gh-cli`** (`gh run`, `gh pr`, `gh api`).
+

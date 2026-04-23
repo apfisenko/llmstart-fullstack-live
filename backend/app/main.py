@@ -83,9 +83,18 @@ def create_app(
                 proxies = (
                     resolved_settings.proxy_url if resolved_settings.proxy_url.strip() else None
                 )
-                client = httpx.AsyncClient(timeout=timeout, proxy=proxies)
+                client = httpx.AsyncClient(
+                    timeout=timeout,
+                    proxy=proxies,
+                    trust_env=False,
+                )
                 app.state.http_client = client
                 app.state.llm = OpenRouterLlmAssistant(resolved_settings, client)
+                logger.info(
+                    "llm_httpx_client openrouter_timeout=%s proxy_set=%s (trust_env off for system proxy)",
+                    resolved_settings.openrouter_timeout,
+                    bool(proxies),
+                )
             else:
                 app.state.llm = StubLlmAssistant()
 
