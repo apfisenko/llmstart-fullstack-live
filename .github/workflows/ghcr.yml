@@ -118,6 +118,22 @@ jobs:
           KNOWN: ${{ secrets.DEPLOY_SSH_KNOWN_HOSTS }}
           KEYSCAN_HOST: ${{ secrets.DEPLOY_HOST }}
 
+      # Multiline PEM в `key:` у Drone/ssh-action иногда не доезжает; пишем в файл и передаём `key_path`.
+      - name: Write SSH private key for deploy
+        id: deploy_ssh_key
+        run: |
+          if [ -z "$SSH_KEY" ]; then
+            echo '::error::Секрет SSH_PRIVATE_KEY пуст. Добавьте в GitHub: Settings → Secrets and variables → Actions — полный приватный ключ CI/CD (строки BEGIN…PRIVATE KEY…END, без кавычек).'
+            exit 1
+          fi
+          key_path="${RUNNER_TEMP}/llmstart_deploy_ssh"
+          printf '%s' "$SSH_KEY" | tr -d '\r' > "$key_path"
+          chmod 600 "$key_path"
+          echo "path=$key_path" >> "$GITHUB_OUTPUT"
+
+        env:
+          SSH_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+
       - name: Roll out stack on VPS
         uses: appleboy/ssh-action@v1.2.0
         env:
@@ -126,7 +142,7 @@ jobs:
         with:
           host: ${{ secrets.DEPLOY_HOST }}
           username: ${{ secrets.DEPLOY_USER }}
-          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          key_path: ${{ steps.deploy_ssh_key.outputs.path }}
           port: ${{ env.SSH_PORT != '' && env.SSH_PORT || 22 }}
           command_timeout: 20m
           script_stop: true

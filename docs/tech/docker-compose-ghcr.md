@@ -66,7 +66,7 @@ make stack-down-ghcr
 |--------|------------|------------------------|
 | `DEPLOY_HOST` | Хост или IP VPS | SSH: поле `host` |
 | `DEPLOY_USER` | Пользователь Linux на сервере | SSH: `username` |
-| `DEPLOY_SSH_KEY` | Приватный SSH-ключ **только для CI/CD** (многострочный PEM) | SSH: `key` |
+| `SSH_PRIVATE_KEY` | Приватный SSH-ключ **только для CI/CD** (многострочный PEM, целиком от `-----BEGIN` до `-----END…`) | В CI пишется в файл, SSH по `key_path` |
 | `DEPLOY_SSH_KNOWN_HOSTS` | Содержимое `known_hosts` для хоста (см. `ssh-keyscan -H` на своей машине) | **Рекомендуется:** пиннинг ключа. Если **не** задан, в CI выполняется **`ssh-keyscan`** к `DEPLOY_HOST` (хост с runner GitHub должен быть доступен по сети; при смене ключа на сервере перезапустите деплой или обновите секрет) |
 | `DEPLOY_SSH_PORT` | Порт SSH, если не **22** | Необязательно: если пусто, используется `22` |
 | `DEPLOY_PATH` | Абсолютный путь к **корню** `git clone` на сервере (где `docker-compose.ghcr.yml`) | Удалённый `cd` перед `git` и `docker compose` |
