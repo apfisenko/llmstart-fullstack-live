@@ -31,9 +31,9 @@
 | 3 | База данных | PostgreSQL, схема, миграции | ✅ Done | [tasklist-database](tasks/tasklist-database.md) |
 | 4 | Реализация Frontend | Веб-кабинет студента и преподавателя | ✅ Done | [tasklist-frontend](tasks/tasklist-frontend.md) |
 | 5 | Интеграция клиентов | Бот и веб работают через backend API | ✅ Done | [tasklist-backend](tasks/tasklist-backend.md) (задача 07) + [tasklist-frontend](tasks/tasklist-frontend.md) |
-| 6 | Dev&Ops & Production | CI/CD, контейнеризация, production-deploy | 🚧 In Progress | [tasklist-devops](tasks/tasklist-devops.md) |
+| 6 | Dev&Ops & Production | CI/CD, контейнеризация, production-deploy | ✅ Done | [tasklist-devops](tasks/tasklist-devops.md) |
 
-**Примечание к ссылкам:** отдельный файл `docs/tasks/tasklist-bot.md` в репозитории пока не ведётся. Итерация **1:** код и сценарии — каталог [`bot/`](../bot/). Итерация **5:** закрыта по DoD в [`plan.md`](plan.md) §итерация 5 — бот через API ([tasklist-backend](tasks/tasklist-backend.md), задача **07**), веб на **`/api/v1/`** ([tasklist-frontend](tasks/tasklist-frontend.md)), сквозной сценарий «бот → данные в вебе». Итерация **6:** [tasklist-devops](tasks/tasklist-devops.md) — **итерации 1–4 закрыты** (локальный compose, GHCR, [timeweb-vps.md](tech/timeweb-vps.md), [vps-manual-ghcr-deploy.md](tech/vps-manual-ghcr-deploy.md)); базовый CI — [`.github/workflows/ci.yml`](../.github/workflows/ci.yml); **полный DoD** итерации 6 (в т.ч. **автоматический** production-deploy) — [ит. 5 tasklist-devops](tasks/tasklist-devops.md#iteration-5-cd-gha) ещё в работе.
+**Примечание к ссылкам:** отдельный файл `docs/tasks/tasklist-bot.md` в репозитории пока не ведётся. Итерация **1:** код и сценарии — каталог [`bot/`](../bot/). Итерация **5 (продукт):** закрыта по DoD в [`plan.md`](plan.md) §итерация 5 — бот через API ([tasklist-backend](tasks/tasklist-backend.md), задача **07**), веб на **`/api/v1/`** ([tasklist-frontend](tasks/tasklist-frontend.md)). Итерация **6 (Dev&Ops):** [tasklist-devops](tasks/tasklist-devops.md) — локальный compose, GHCR, VPS, [vps-manual-ghcr-deploy.md](tech/vps-manual-ghcr-deploy.md), [автодеплой](tasks/tasklist-devops.md#iteration-5-cd-gha) (job **deploy** в [`.github/workflows/ghcr.yml`](../.github/workflows/ghcr.yml), [docker-compose-ghcr.md § CD](tech/docker-compose-ghcr.md#cd-автодеплой-github-actions)); CI — [`.github/workflows/ci.yml`](../.github/workflows/ci.yml).
 
 ---
 
@@ -156,15 +156,13 @@
 
 ---
 
-### Итерация 6: Dev&Ops & Production 🚧
+### Итерация 6: Dev&Ops & Production ✅
 
-**Уже сделано по [tasklist-devops](tasks/tasklist-devops.md):** [итерация 1](tasks/tasklist-devops.md#iteration-1-local-stack) (локальный compose, Dockerfile, `Makefile` / `tasks.ps1`, проверки компонентов, [docker-compose-local.md](tech/docker-compose-local.md)) и [итерация 2](tasks/tasklist-devops.md#iteration-2-ghcr) (GHCR, [`docker-compose.ghcr.yml`](../docker-compose.ghcr.yml), workflow после зелёного CI). [итерация 3](tasks/tasklist-devops.md#iteration-3-timeweb-vps) (Timeweb Cloud, `twc`, два SSH-ключа, [timeweb-vps.md](tech/timeweb-vps.md) без секретов; **создание и оплата VPS** — у владельца аккаунта по инструкции). [итерация 4](tasks/tasklist-devops.md#iteration-4-server-setup) (bootstrap [`devops/vps`](../devops/vps/README.md), [vps-manual-ghcr-deploy.md](tech/vps-manual-ghcr-deploy.md), ручной `docker login` + ручной `compose` на сервере, проверки API/браузера). [GitHub Actions CI](../.github/workflows/ci.yml) — линт/сборка `frontend/web`, ruff для `bot/` и `backend`, pytest `backend/tests/pg` с PostgreSQL.
-
-**Ещё не закрыто:** полный DoD **итерации 6** (в т.ч. **воспроизводимый production-deploy** с CD, единый пайплайн, прод-секреты по `vision.md`) — [итерация 5](tasks/tasklist-devops.md#iteration-5-cd-gha) в [tasklist-devops](tasks/tasklist-devops.md); **ручной** прод на VPS с GHCR (ит. 4) закрыт; **автодеплой** — ит. 5. Раздел «Вне scope» в [tasklist-devops](tasks/tasklist-devops.md).
+**Уже сделано по [tasklist-devops](tasks/tasklist-devops.md):** [итерация 1](tasks/tasklist-devops.md#iteration-1-local-stack) (локальный compose, Dockerfile, `Makefile` / `tasks.ps1`, [docker-compose-local.md](tech/docker-compose-local.md)) и [итерация 2](tasks/tasklist-devops.md#iteration-2-ghcr) (GHCR, [`docker-compose.ghcr.yml`](../docker-compose.ghcr.yml), [`.github/workflows/ghcr.yml`](../.github/workflows/ghcr.yml) после зелёного CI). [итерация 3](tasks/tasklist-devops.md#iteration-3-timeweb-vps) (Timeweb, `twc`, [timeweb-vps.md](tech/timeweb-vps.md)). [итерация 4](tasks/tasklist-devops.md#iteration-4-server-setup) (bootstrap [`devops/vps`](../devops/vps/README.md), [vps-manual-ghcr-deploy.md](tech/vps-manual-ghcr-deploy.md), ручной `compose` на сервере). [итерация 5 (CD) в tasklist](tasks/tasklist-devops.md#iteration-5-cd-gha): job **Deploy to VPS** в [`.github/workflows/ghcr.yml`](../.github/workflows/ghcr.yml), секреты и сценарий — [docker-compose-ghcr.md § CD](tech/docker-compose-ghcr.md#cd-автодеплой-github-actions). [CI](../.github/workflows/ci.yml) — линт/сборка `frontend/web`, ruff, pytest. **Вне scope** devops-tasklist: Kubernetes, «полноценный» мониторинг, облачные бэкапы — см. [tasklist-devops, конец](tasks/tasklist-devops.md#вне-scope-граница-этого-tasklist).
 
 **Цель:** контейнеризовать систему, настроить CI/CD и выполнить production-deploy.
 
-⚡ **Параллельность:** базовые задачи (CI, секреты, Dockerfile) можно было вести параллельно с итерациями 4–5; далее — параллельно с завершением итерации 6.
+⚡ **Параллельность:** при развитии проекта devops-задачи (CI, образы, CD) сочетаются с фиче-работой по [tasklist](tasks/) вне этого этапа.
 
 **Критерии завершения (DoD):**
 

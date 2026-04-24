@@ -20,7 +20,7 @@
 | Итерация 2 | GitHub Actions: сборка и push образов в GHCR; compose из registry; проверка локального запуска | ✅ | [блок](#iteration-2-ghcr) |
 | Итерация 3 | Облачный сервер (Timeweb, `twc`): SSH-ключи (личный + CI/CD), минимальная VPS с публичным IP, фиксация в docs, проверка SSH | ✅ | [блок](#iteration-3-timeweb-vps) |
 | Итерация 4 | Настройка сервера: инструменты, скрипт + инструкция, каталоги и `.env` по образцу, ручной `docker login` ghcr, ручной `compose up`, проверка API и браузером | ✅ | [блок](#iteration-4-server-setup) |
-| Итерация 5 | Автодеплой: GitHub Secrets (инструкция), workflow по изменению кода, проверка пушем, обновление docs | 📋 | [блок](#iteration-5-cd-gha) |
+| Итерация 5 | Автодеплой: GitHub Secrets (инструкция), workflow по изменению кода, проверка пушем, обновление docs | ✅ | [блок](#iteration-5-cd-gha) |
 
 ---
 
@@ -185,11 +185,11 @@
 
 ### Состав работ
 
-- [ ] Документация (в `docs/tech/` или отдельный раздел): какие **GitHub Secrets** создать (например **хост** или `DEPLOY_HOST`, **пользователь** SSH, **приватный ключ CI/CD** в `-----BEGIN`…`END-----`, при необходимости порт; **фingerprint** `known_hosts` — по согласованию). Указать: секреты создаёт **владелец** репозитория/организации; **не** дублировать значения в markdown.
-- [ ] Настроить **workflow** в [`.github/workflows/`](../../.github/workflows/): деплой **после** успешной публикации образов или **в** том же pipeline после зелёного `docker push` (связь с [ghcr.yml](../../.github/workflows/ghcr.yml) — `needs`, `workflow_run`, или `workflow_call` — выбрать и описать). Типовая схема: по SSH на сервер — `docker compose pull` и `up -d` (или `git pull` + compose — **один** согласованный способ) в каталоге деплоя.
-- [ ] Следовать skill [**`github-actions-templates`**](../../.cursor/skills/github-actions-templates/SKILL.md): `permissions`, `concurrency` по желанию, **никогда** не `echo` секреты.
-- [ ] **Проверка:** осмысленное изменение в коде/конфиге (пуш), ожидание **зелёного** workflow, затем **та же** проверка, что в итерации 4 (API + браузер) без ручного деплоя.
-- [ ] Обновить документацию: [docs/tech/docker-compose-ghcr.md](../tech/docker-compose-ghcr.md) — раздел **CD**; [docs/plan.md](../plan.md) — критерий **«воспроизводимый production-deploy»** / итерация 6; [architecture.md](../architecture.md) при необходимости.
+- [x] Документация: какие **GitHub Secrets** и как — [docker-compose-ghcr.md](../tech/docker-compose-ghcr.md#cd-автодеплой-github-actions). Секреты заводит **владелец**; **не** дублировать значения в markdown.
+- [x] **Workflow:** job **Deploy to VPS** в [ghcr.yml](../../.github/workflows/ghcr.yml) (`needs: build-push`), на сервере `git` + `docker compose` в `DEPLOY_PATH`.
+- [x] [github-actions-templates](../../.cursor/skills/github-actions-templates/SKILL.md): `permissions` у job deploy, `concurrency: deploy-vps`, без `echo` секретов.
+- [ ] **Проверка (владелец):** пуш в `main`/`master` → зелёный run → те же шаги, что [ит. 4](#iteration-4-server-setup) (API, браузер) без ручного деплоя.
+- [x] [docker-compose-ghcr.md](../tech/docker-compose-ghcr.md) § **CD**; [plan.md](../plan.md); [architecture.md](../architecture.md); [vps-manual-ghcr-deploy.md](../tech/vps-manual-ghcr-deploy.md) (ввод + ссылка на CD).
 
 ### Definition of Done
 
@@ -206,7 +206,7 @@
 
 ### Артефакты (целевые)
 
-- `.github/workflows/<deploy>.yml` (или расширение существующего) — CD.
+- [ghcr.yml](../../.github/workflows/ghcr.yml) — job **deploy** (CD) после **build-push**.
 - Раздел в [docs/tech/docker-compose-ghcr.md](../tech/docker-compose-ghcr.md) или отдельный `docs/tech/…` с **списком Secrets** и сценарием ручного отката (по желанию — кратко).
 - Обновления [plan.md](../plan.md), [architecture.md](../architecture.md).
 

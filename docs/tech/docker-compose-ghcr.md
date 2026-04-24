@@ -56,10 +56,33 @@ make stack-down-ghcr
 
 Локальная сборка из Dockerfile: [docker-compose-local.md](docker-compose-local.md) и корневой [`docker-compose.yml`](../../docker-compose.yml). Сценарий GHCR не заменяет его — это отдельный файл с теми же сервисами и образами из registry.
 
-## VPS / прод (ручной шаг `docker login`)
+## CD: автодеплой (GitHub Actions)
+
+После того как job **build-push** в [`.github/workflows/ghcr.yml`](../../.github/workflows/ghcr.yml) опубликует все три образа (backend, bot, web), job **deploy** по SSH на VPS выполняет в каталоге деплоя: `git fetch` → `git checkout` на **тот же commit SHA**, что и сборка, затем при необходимости `docker login` к GHCR, `docker compose -f docker-compose.ghcr.yml --profile app pull` и `up -d --wait` с `IMAGE_TAG=latest` (образы `latest` только что ушли в registry в этом же run).
+
+**Цепочка:** push в `main` / `master` → **CI** (успех) → **GHCR images** (сборка и push) → **Deploy to VPS**. Ручной запуск **Actions → GHCR images → Run workflow** тоже прогоняет публикацию и деплой (разумная проверка CD).
+
+| Secret | Назначение | Как workflow использует |
+|--------|------------|------------------------|
+| `DEPLOY_HOST` | Хост или IP VPS | SSH: поле `host` |
+| `DEPLOY_USER` | Пользователь Linux на сервере | SSH: `username` |
+| `DEPLOY_SSH_KEY` | Приватный SSH-ключ **только для CI/CD** (многострочный PEM) | SSH: `key` |
+| `DEPLOY_SSH_KNOWN_HOSTS` | Содержимое `known_hosts` для хоста (одна или несколько строк) | В runner: запись `~/.ssh/known_hosts` до SSH |
+| `DEPLOY_SSH_PORT` | Порт SSH, если не **22** | Необязательно: если пусто, используется `22` |
+| `DEPLOY_PATH` | Абсолютный путь к **корню** `git clone` на сервере (где `docker-compose.ghcr.yml`) | Удалённый `cd` перед `git` и `docker compose` |
+| `GHCR_DEPLOY_READ_TOKEN` | Токен с **`read:packages`** (PAT / fine-grained) | Необязательно: если задан, на VPS выполняется `echo … \| docker login ghcr.io -u <user> --password-stdin` перед `compose pull` (**приватные** пакеты GHCR). Значения **не** печатать в логах. |
+| `GHCR_DEPLOY_READ_USER` | GitHub-**аккаунт владельца** токена (логин для `docker login`) | Необязательно: если пусто, подставляется `github.repository_owner` (подходит, если PAT выдан тому же пользователю/боту) |
+
+Секреты создаёт **владелец** репозитория: **Settings → Secrets and variables → Actions**; в документации и в issues **не** дублировать значения.
+
+**Согласованность ref:** в `.env` на сервере при CD достаточно `IMAGE_TAG=latest`; checkout по полному SHA держит на сервере **те же** `docker-compose.ghcr.yml` и пути, что в коммите образов. Для `git fetch` / `git checkout` на сервере должен быть настроен доступ к репозиторию (как в [vps-manual-ghcr-deploy.md](vps-manual-ghcr-deploy.md#2-копирование-репозитория-на-vps) — deploy key или HTTPS + PAT клон).
+
+---
+
+## VPS / прод: ручной `docker login` (вне GHA)
 
 На сервере используются **те же** переменные (`.env` рядом с compose, `LLMSTART_GHCR_IMAGE_ROOT`, при необходимости `BACKEND_API_CLIENT_TOKEN` и `backend/.env` / `bot/.env`), что и при локальном [§ «Запуск compose»](#запуск-compose) выше.
 
-**`docker login ghcr.io` на сервере** выполняет **только** владелец (PAT / fine-grained, `read:packages` для приватных пакетов) — **не** автоматизируется агентом. Готовые команды и порядок: [vps-manual-ghcr-deploy.md](vps-manual-ghcr-deploy.md). Для **публичных** пакетов в GHCR логин **не** нужен.
+**Ручной** сценарий: **`docker login ghcr.io` на сервере** (PAT, `read:packages` для приватных пакетов) — ввод **владелец** на машине, без публикации токена в репо; готовые команды: [vps-manual-ghcr-deploy.md](vps-manual-ghcr-deploy.md). Автодеплой из GitHub для приватных пакетов использует секрет **`GHCR_DEPLOY_READ_TOKEN`**, см. [§ CD](#cd-автодеплой-github-actions). Для **публичных** пакетов логин на сервере **не** нужен.
 
 **Связка с облаком:** [timeweb-vps.md](timeweb-vps.md) (VPS, SSH, `twc`), чеклист — [итерация 4 в tasklist-devops.md](../tasks/tasklist-devops.md#iteration-4-server-setup).

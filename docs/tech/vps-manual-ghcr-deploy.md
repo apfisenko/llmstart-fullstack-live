@@ -1,6 +1,6 @@
 # VPS: ручной деплой стека из GHCR
 
-Пошаговый сценарий для **воспроизводимой** настройки хоста (Debian/Ubuntu) и подъёма того же стека, что в [docker-compose.ghcr.yml](../../docker-compose.ghcr.yml), **без** автоматического CD (он — [итерация 5 в tasklist-devops.md](../tasks/tasklist-devops.md#iteration-5-cd-gha)).
+Пошаговый сценарий для **воспроизводимой** настройки хоста (Debian/Ubuntu) и подъёма того же стека, что в [docker-compose.ghcr.yml](../../docker-compose.ghcr.yml). **Автодеплой** (GitHub Actions после публикации образов) — [docker-compose-ghcr.md](docker-compose-ghcr.md#cd-автодеплой-github-actions) и job **deploy** в [`.github/workflows/ghcr.yml`](../../.github/workflows/ghcr.yml). Ниже — **ручной** путь: bootstrap, env, `docker login`, compose.
 
 **Политика:** в git **не** попадают токены, приватные ключи и прод-`.env`. Этот файл содержит только **шаблоны команд**; подставляете значения **на сервере** сами.
 

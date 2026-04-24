@@ -78,3 +78,60 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha,scope=${{ matrix.id }}
           cache-to: type=gha,mode=max,scope=${{ matrix.id }}
+
+  # После публикации всех образов — деплой на VPS по SSH (см. docs/tech/docker-compose-ghcr.md § CD).
+  deploy:
+    name: Deploy to VPS
+    needs: [build-push]
+    if: needs.build-push.result == 'success' && (github.event_name == 'workflow_dispatch' || (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success'))
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    concurrency:
+      group: deploy-vps
+      cancel-in-progress: false
+    env:
+      # Тот же ref, по которому собирался build-push.
+      DEPLOY_GIT_REF: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_sha || github.sha }}
+      SSH_PORT: ${{ secrets.DEPLOY_SSH_PORT }}
+      # Для `docker login ghcr.io` при приватных пакетах: имя владельца токена (если пусто — `repository_owner`).
+      GHCR_LOGIN_USER: ${{ secrets.GHCR_DEPLOY_READ_USER != '' && secrets.GHCR_DEPLOY_READ_USER || github.repository_owner }}
+    steps:
+      - name: Configure SSH known hosts
+        run: |
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+          if [ -z "$KNOWN" ]; then
+            echo "DEPLOY_SSH_KNOWN_HOSTS is not set" >&2
+            exit 1
+          fi
+          printf '%s' "$KNOWN" > ~/.ssh/known_hosts
+          chmod 600 ~/.ssh/known_hosts
+        env:
+          KNOWN: ${{ secrets.DEPLOY_SSH_KNOWN_HOSTS }}
+
+      - name: Roll out stack on VPS
+        uses: appleboy/ssh-action@v1.2.0
+        env:
+          DEPLOY_PATH: ${{ secrets.DEPLOY_PATH }}
+          GHCR_DEPLOY_READ_TOKEN: ${{ secrets.GHCR_DEPLOY_READ_TOKEN }}
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: ${{ secrets.DEPLOY_USER }}
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          port: ${{ env.SSH_PORT != '' && env.SSH_PORT || 22 }}
+          command_timeout: 20m
+          script_stop: true
+          envs: DEPLOY_GIT_REF,DEPLOY_PATH,GHCR_DEPLOY_READ_TOKEN,GHCR_LOGIN_USER
+          script: |
+            set -euo pipefail
+            cd "$DEPLOY_PATH"
+            git fetch origin
+            git checkout -f "$DEPLOY_GIT_REF"
+            if [ -n "${GHCR_DEPLOY_READ_TOKEN:-}" ]; then
+              echo "$GHCR_DEPLOY_READ_TOKEN" | docker login ghcr.io -u "$GHCR_LOGIN_USER" --password-stdin
+            fi
+            export IMAGE_TAG=latest
+            docker compose -f docker-compose.ghcr.yml --profile app pull
+            docker compose -f docker-compose.ghcr.yml --profile app up -d --wait
