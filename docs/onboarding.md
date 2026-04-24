@@ -2,7 +2,7 @@
 
 Цель: за один сеанс клонировать репозиторий, настроить окружение и убедиться, что backend, БД и (по желанию) веб работают. Версии инструментов как в CI — [.github/workflows/ci.yml](../.github/workflows/ci.yml) (Node **22**, pnpm **10**, uv, Postgres **16** в сервисе CI).
 
-Архитектура монорепо — [architecture.md](architecture.md).
+Архитектура монорепо — [architecture.md](architecture.md). Продовый VPS (Timeweb, `twc`, SSH) — [tech/timeweb-vps.md](tech/timeweb-vps.md); **ручной** подъём стека с образов GHCR на хосте — [tech/vps-manual-ghcr-deploy.md](tech/vps-manual-ghcr-deploy.md). Обзор итераций DevOps — [tasks/tasklist-devops.md](tasks/tasklist-devops.md).
 
 **Команды из корня репозитория**
 

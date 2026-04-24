@@ -55,3 +55,11 @@ make stack-down-ghcr
 ## Связь с локальным compose
 
 Локальная сборка из Dockerfile: [docker-compose-local.md](docker-compose-local.md) и корневой [`docker-compose.yml`](../../docker-compose.yml). Сценарий GHCR не заменяет его — это отдельный файл с теми же сервисами и образами из registry.
+
+## VPS / прод (ручной шаг `docker login`)
+
+На сервере используются **те же** переменные (`.env` рядом с compose, `LLMSTART_GHCR_IMAGE_ROOT`, при необходимости `BACKEND_API_CLIENT_TOKEN` и `backend/.env` / `bot/.env`), что и при локальном [§ «Запуск compose»](#запуск-compose) выше.
+
+**`docker login ghcr.io` на сервере** выполняет **только** владелец (PAT / fine-grained, `read:packages` для приватных пакетов) — **не** автоматизируется агентом. Готовые команды и порядок: [vps-manual-ghcr-deploy.md](vps-manual-ghcr-deploy.md). Для **публичных** пакетов в GHCR логин **не** нужен.
+
+**Связка с облаком:** [timeweb-vps.md](timeweb-vps.md) (VPS, SSH, `twc`), чеклист — [итерация 4 в tasklist-devops.md](../tasks/tasklist-devops.md#iteration-4-server-setup).

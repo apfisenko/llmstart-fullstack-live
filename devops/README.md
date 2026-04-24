@@ -10,6 +10,7 @@
 | [`devops/bot/Dockerfile`](bot/Dockerfile) | Telegram-бот из корневого `pyproject.toml` + `bot/` |
 | [`devops/web/Dockerfile`](web/Dockerfile) | Next.js multi-stage, `output: "standalone"` |
 | [`devops/postgres/docker-entrypoint-initdb.d/`](postgres/docker-entrypoint-initdb.d/) | Init SQL (например БД для pytest) |
+| [`devops/vps/`](vps/README.md) | Подготовка VPS: bootstrap Docker + Compose (Debian/Ubuntu), см. [docs/tech/vps-manual-ghcr-deploy.md](../docs/tech/vps-manual-ghcr-deploy.md) |
 
 Сборка **всегда с контекстом корня репозитория** (чтобы подтянуть `backend/`, `bot/`, `frontend/web/` и общий [`.dockerignore`](../.dockerignore)):
 

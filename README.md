@@ -42,6 +42,7 @@ flowchart LR
 - [Онбординг разработчика](docs/onboarding.md) — клонирование, env, проверка стека, CI-подобные команды
 - [Локальный Docker Compose](docs/tech/docker-compose-local.md) — только Postgres или полный стек (`stack-up`), проверки сервисов
 - [Стек из образов GHCR](docs/tech/docker-compose-ghcr.md) — запуск без локальной сборки образов приложений (`docker-compose.ghcr.yml`)
+- [VPS в Timeweb (twc, SSH)](docs/tech/timeweb-vps.md) — прод-хост, ключи, CLI; без секретов в репо
 - [Архитектура (обзор)](docs/architecture.md)
 - [Идея продукта](docs/idea.md)
 - [Архитектурное видение](docs/vision.md)

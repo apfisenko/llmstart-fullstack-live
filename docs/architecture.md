@@ -55,6 +55,10 @@ sequenceDiagram
 - Образы и init SQL — каталог [`devops/`](../devops/README.md); сборка `docker build -f devops/<сервис>/Dockerfile .` из корня репозитория.
 - Внутри compose клиенты ходят в backend по DNS-имени сервиса (`web` → `http://backend:8000`, бот — `BACKEND_HOST=backend`). Подробности и проверки — [tech/docker-compose-local.md](tech/docker-compose-local.md).
 
+## Production (обзор)
+
+Прод-развёртывание целится в **один внешний хост** (VPS) с публичным IP: **Timeweb Cloud** и CLI **`twc`**, SSH по ключу, далее тот же стек контейнеров, что в [docker-compose.ghcr.yml](../docker-compose.ghcr.yml) (см. [tech/docker-compose-ghcr.md](tech/docker-compose-ghcr.md)). Создание инстанса, ключи и токены — вне репозитория; идентификация и сценарий без секретов — [tech/timeweb-vps.md](tech/timeweb-vps.md). **Ручной** деплой на сервер: [копирование репозитория на VPS](tech/vps-manual-ghcr-deploy.md#2-копирование-репозитория-на-vps) (`git clone`), bootstrap Docker, `.env` по образцам, **`docker login ghcr.io` только вручную** при приватных пакетах, `docker compose` — [tech/vps-manual-ghcr-deploy.md](tech/vps-manual-ghcr-deploy.md). Клиенты (Telegram, браузер) обращаются к backend по **HTTPS** на публичный хост/домен после настройки сети и (при необходимости) reverse proxy — далее [tasklist-devops, итерация 5](tasks/tasklist-devops.md#iteration-5-cd-gha) (CD).
+
 ## Детали и контракты
 
 - [vision.md](vision.md) — границы системы, клиенты vs ядро

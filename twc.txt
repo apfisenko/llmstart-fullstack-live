@@ -1,0 +1,10 @@
+PS C:\> twc server create --name "llmstart-prod" --image ubuntu-24.04 --preset-id 2449 --ssh-key "C:\Users\apfisenko\.ssh\llmstart_dev.pub"
+7677937
+PS C:\> twc server list
+ID       NAME           REGION  STATUS      IPV4
+7677937  llmstart-prod  ru-1    installing  91.210.168.20
+PS C:\> twc server get 7677937
+ID       NAME           REGION  STATUS  IPV4
+7677937  llmstart-prod  ru-1    on      91.210.168.20
+
+ssh -i $env:USERPROFILE\.ssh\llmstart_dev root@91.210.168.20
