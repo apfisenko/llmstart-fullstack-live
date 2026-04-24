@@ -1,0 +1,3 @@
+cd /opt/llmstart
+git fetch origin
+git pull

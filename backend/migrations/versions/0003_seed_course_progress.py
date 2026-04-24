@@ -28,13 +28,23 @@ branch_labels = None
 depends_on = None
 
 
-def _repo_root() -> Path:
-    return Path(__file__).resolve().parents[3]
+def _data_json_path() -> Path:
+    """Клон репозитория: <repo>/data/…; образ backend: /app/import-data/… (см. devops/backend/Dockerfile)."""
+    here = Path(__file__).resolve()
+    p_repo = here.parents[3] / "data" / "progress-import.v1.json"
+    if p_repo.is_file():
+        return p_repo
+    p_bundled = here.parents[2] / "import-data" / "progress-import.v1.json"
+    if p_bundled.is_file():
+        return p_bundled
+    raise FileNotFoundError(
+        f"progress-import.v1.json не найден. Ожидались: {p_repo} (клон репо) "
+        f"или {p_bundled} (образ backend)."
+    )
 
 
 def _load_payload() -> dict:
-    path = _repo_root() / "data" / "progress-import.v1.json"
-    return json.loads(path.read_text(encoding="utf-8"))
+    return json.loads(_data_json_path().read_text(encoding="utf-8"))
 
 
 def _parse_submitted_at(raw: str) -> datetime:

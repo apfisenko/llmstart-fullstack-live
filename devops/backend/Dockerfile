@@ -17,6 +17,7 @@ COPY backend/pyproject.toml backend/uv.lock backend/README.md ./
 COPY backend/alembic.ini ./
 COPY backend/app ./app
 COPY backend/migrations ./migrations
+COPY data/progress-import.v1.json /app/import-data/progress-import.v1.json
 COPY bot/prompts ./bot/prompts
 
 RUN --mount=type=cache,target=/root/.cache/uv \

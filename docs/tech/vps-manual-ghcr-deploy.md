@@ -196,7 +196,8 @@ docker logs llmstart-backend --tail 200
 **Типовые причины:**
 
 1. **Падение в entrypoint до uvicorn** — [docker-entrypoint.sh](../../devops/backend/docker-entrypoint.sh) выполняет `alembic upgrade head`. Ошибка миграции (структура БД, сеть до `postgres`, неверные права) останавливает контейнер: в логах будет Traceback **Alembic** / `OperationalError` / `asyncpg`.  
-   - Если лог: **`ModuleNotFoundError: No module named 'psycopg2'`** — в образе **backend** в lock должна быть зависимость **`psycopg2-binary`** (Alembic в [migrations/env.py](../../backend/migrations/env.py) подменяет `+asyncpg` → `+psycopg2` для sync-движка). Обновите **образ** `…/backend` из свежего CI ([ghcr workflow](../../.github/workflows/ghcr.yml)) и снова `docker compose pull` / `up`.
+   - **`ModuleNotFoundError: No module named 'psycopg2'`** — в lock образа **backend** должна быть **`psycopg2-binary`**. Обновите образ из CI, снова `docker compose pull` / `up`.
+   - **`FileNotFoundError: … progress-import.v1.json`** — миграция `0003` читает сид-файл: в [образе](../../devops/backend/Dockerfile) он кладётся в `/app/import-data/`; на хосте при `alembic` из корня репо путь — `data/` в **корне** клона. Обновите **backend**-образ с этим Dockerfile и `pull`, либо убедитесь, что в клоне на VPS есть [`data/progress-import.v1.json`](../../data/progress-import.v1.json).
 2. **Ошибка при старте приложения** (валидация [Settings](../../backend/app/config.py), подключение к БД) — в логах **uvicorn** / Python-исключение **до** приёма запросов; healthcheck на `/health` не проходит, пока процесс не слушает `8000`.
 3. **Неверный `backend/.env`** (битая строка, лишние кавычки, невалидные значения) — смотрите лог; для подключения к БД в Docker compose всё равно подставляет [переменные `DATABASE_URL` / `DOCKER_DATABASE_URL` в YAML](../../docker-compose.ghcr.yml) и [entrypoint](../../devops/backend/docker-entrypoint.sh), но ошибка в файле всё ещё может мешать загрузке env.
 
