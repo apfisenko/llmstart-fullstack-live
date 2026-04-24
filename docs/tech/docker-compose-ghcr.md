@@ -69,7 +69,7 @@ make stack-down-ghcr
 | `SSH_PRIVATE_KEY` | Приватный SSH-ключ **только для CI/CD** (многострочный PEM, целиком от `-----BEGIN` до `-----END…`) | В CI пишется в файл, SSH по `key_path` |
 | `DEPLOY_SSH_KNOWN_HOSTS` | Содержимое `known_hosts` для хоста (см. `ssh-keyscan -H` на своей машине) | **Рекомендуется:** пиннинг ключа. Если **не** задан, в CI выполняется **`ssh-keyscan`** к `DEPLOY_HOST` (хост с runner GitHub должен быть доступен по сети; при смене ключа на сервере перезапустите деплой или обновите секрет) |
 | `DEPLOY_SSH_PORT` | Порт SSH, если не **22** | Необязательно: если пусто, используется `22` |
-| `DEPLOY_PATH` | Абсолютный путь к **корню** `git clone` на сервере (где `docker-compose.ghcr.yml`) | Удалённый `cd` перед `git` и `docker compose` |
+| `DEPLOY_PATH` | Абсолютный путь к **корню** `git clone` на сервере: каталог, где лежат **`.git`**, `docker-compose.ghcr.yml` (напр. `/opt/llmstart`, см. [vps-manual-ghcr-deploy.md](vps-manual-ghcr-deploy.md#2-копирование-репозитория-на-vps)) | `cd` и `git fetch` / `checkout`. Если пусто или путь не клона — `fatal: not a git repository` |
 | `GHCR_DEPLOY_READ_TOKEN` | Токен с **`read:packages`** (PAT / fine-grained) | Необязательно: если задан, на VPS выполняется `echo … \| docker login ghcr.io -u <user> --password-stdin` перед `compose pull` (**приватные** пакеты GHCR). Значения **не** печатать в логах. |
 | `GHCR_DEPLOY_READ_USER` | GitHub-**аккаунт владельца** токена (логин для `docker login`) | Необязательно: если пусто, подставляется `github.repository_owner` (подходит, если PAT выдан тому же пользователю/боту) |
 

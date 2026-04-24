@@ -134,6 +134,15 @@ jobs:
         env:
           SSH_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
 
+      - name: Require DEPLOY_PATH
+        run: |
+          if [ -z "$P" ]; then
+            echo '::error::Секрет DEPLOY_PATH пуст. Укажите абсолютный путь к **корню git clone** на VPS (каталог с папкой `.git` и `docker-compose.ghcr.yml`, напр. /opt/llmstart).'
+            exit 1
+          fi
+        env:
+          P: ${{ secrets.DEPLOY_PATH }}
+
       - name: Roll out stack on VPS
         uses: appleboy/ssh-action@v1.2.0
         env:
@@ -149,7 +158,15 @@ jobs:
           envs: DEPLOY_GIT_REF,DEPLOY_PATH,GHCR_DEPLOY_READ_TOKEN,GHCR_LOGIN_USER
           script: |
             set -euo pipefail
-            cd "$DEPLOY_PATH"
+            if [ -z "${DEPLOY_PATH:-}" ]; then
+              echo 'DEPLOY_PATH пуст на сервере — проверьте передачу секрета в envs' >&2
+              exit 1
+            fi
+            cd "$DEPLOY_PATH" || { echo "Нет каталога: $DEPLOY_PATH" >&2; exit 1; }
+            if [ ! -d .git ]; then
+              echo "В $DEPLOY_PATH нет .git — укажите корень клона (см. docs/tech/vps-manual-ghcr-deploy.md §2) или сделайте git clone." >&2
+              exit 1
+            fi
             git fetch origin
             git checkout -f "$DEPLOY_GIT_REF"
             if [ -n "${GHCR_DEPLOY_READ_TOKEN:-}" ]; then
