@@ -102,14 +102,21 @@ jobs:
         run: |
           mkdir -p ~/.ssh
           chmod 700 ~/.ssh
-          if [ -z "$KNOWN" ]; then
-            echo "DEPLOY_SSH_KNOWN_HOSTS is not set" >&2
-            exit 1
+          if [ -n "$KNOWN" ]; then
+            printf '%s' "$KNOWN" > ~/.ssh/known_hosts
+          else
+            if [ -z "$KEYSCAN_HOST" ]; then
+              echo "Set DEPLOY_SSH_KNOWN_HOSTS, or set DEPLOY_HOST for ssh-keyscan fallback" >&2
+              exit 1
+            fi
+            echo "::notice::DEPLOY_SSH_KNOWN_HOSTS empty: using ssh-keyscan (add the secret to pin the host key)" >&2
+            port="${SSH_PORT:-22}"
+            ssh-keyscan -p "$port" -H "$KEYSCAN_HOST" >> ~/.ssh/known_hosts
           fi
-          printf '%s' "$KNOWN" > ~/.ssh/known_hosts
           chmod 600 ~/.ssh/known_hosts
         env:
           KNOWN: ${{ secrets.DEPLOY_SSH_KNOWN_HOSTS }}
+          KEYSCAN_HOST: ${{ secrets.DEPLOY_HOST }}
 
       - name: Roll out stack on VPS
         uses: appleboy/ssh-action@v1.2.0
