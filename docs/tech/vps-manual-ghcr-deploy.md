@@ -122,8 +122,15 @@ sudo ./devops/vps/bootstrap-debian-ubuntu.sh
 |------|------------------------|------------|
 | Корневой `.env` (рядом с `docker-compose.ghcr.yml`) | [`.env.ghcr.example`](../../.env.ghcr.example) | `LLMSTART_GHCR_IMAGE_ROOT=ghcr.io/<владелец>/<репо>` (нижний регистр), `IMAGE_TAG=latest` или `sha-…` |
 | Тот же `.env` при необходимости | — | `BACKEND_API_CLIENT_TOKEN=…` — общий секрет web→backend, если задан в backend (см. [docker-compose.ghcr.yml](../../docker-compose.ghcr.yml) у сервиса `web`) |
-| `backend/.env` | [backend/.env.example](../../backend/.env.example) | Ключи LLM (`OPENROUTER_*`), `BACKEND_API_CLIENT_TOKEN`, логи и т.д. **Не** кладите секреты в git. |
-| `bot/.env` | [bot/.env.example](../../bot/.env.example) | `TELEGRAM_TOKEN`, при необходимости `COHORT_ID` / `MEMBERSHIP_ID`, токен к API, если backend требует Bearer. |
+| `backend/.env` | [backend/.env.example](../../backend/.env.example) | Ключи LLM (`OPENROUTER_*`), `SYSTEM_PROMPT_PATH` (путь к системному промпту для LLM, по умолчанию `bot/prompts/system.txt` в [конфиге backend](../../backend/app/config.py) — **это настройка ядра**, не бота), `BACKEND_API_CLIENT_TOKEN`, `LOG_LEVEL` и т.д. **Не** кладите секреты в git. |
+| `bot/.env` | [bot/.env.example](../../bot/.env.example) | `TELEGRAM_TOKEN`, при необходимости `COHORT_ID` / `MEMBERSHIP_ID`, токен к API, если backend требует Bearer. Прокси — см. [§ ниже](#пояснения-system_prompt_path-и-прокси-бота). |
+| `frontend/web/.env.local` | [frontend/web/.env.example](../../frontend/web/.env.example) (только локально) | **На VPS с GHCR-стеком не копируется и не подключается:** в [docker-compose.ghcr.yml](../../docker-compose.ghcr.yml) у `web` **нет** `env_file` — только `BACKEND_ORIGIN: http://backend:8000` и `BACKEND_API_CLIENT_TOKEN` из **корневого** `.env` (см. строки таблицы выше). Сборка образа `web` — в CI ([`devops/web/Dockerfile`](../../devops/web/Dockerfile)), рантайм-контейнера читает env из compose. **Локальная** разработка веба — [onboarding.md](../onboarding.md), [docker-compose-local.md](docker-compose-local.md). |
+
+### Пояснения: `SYSTEM_PROMPT_PATH` и прокси бота
+
+- **`SYSTEM_PROMPT_PATH` не относится к `bot/.env`:** переменная только у **backend** ([`backend/.env.example`](../../backend/.env.example), [`config.py` — `Settings`](../../backend/app/config.py)): путь к файлу с **системным промптом для LLM** внутри контейнера backend. Бот в Telegram этот файл **не** читает. Для GHCR-деплоя укажите путь **в `backend/.env`**; чаще достаточно значения по умолчанию из примера.
+
+- **`BACKEND_HTTP_PROXY`** (см. [`bot/.env.example`](../../bot/.env.example)) — URL HTTP(S)-прокси **только** для **HTTP-запросов бота к API backend** (httpx). Не путать с **`PROXY_URL`**: тот — для **исходящих к Telegram** (aiogram; см. [README — заметка про `PROXY_URL` / `BACKEND_HTTP_PROXY`](../../README.md)). В одном `docker compose` сеть связана напрямую: прокси к backend **обычно не нужен**; [docker-compose.ghcr.yml](../../docker-compose.ghcr.yml) для `bot` задаёт `BACKEND_HTTP_PROXY: ""` в `environment` (перекрывает `env_file`). Указывайте `BACKEND_HTTP_PROXY` только если запросы бота к `http://backend:8000` в вашей сети **должны** идти через отдельный HTTP-прокси.
 
 **Compose** для backend в [docker-compose.ghcr.yml](../../docker-compose.ghcr.yml) задаёт подключение к БД через `postgres:` и `DATABASE_URL`/`DOCKER_DATABASE_URL` в `environment` — согласовано с [docker-compose-ghcr.md](docker-compose-ghcr.md).
 
@@ -177,6 +184,31 @@ docker compose -f docker-compose.ghcr.yml --profile app logs -f --tail=100
 ```bash
 docker compose -f docker-compose.ghcr.yml --profile app down
 ```
+
+### Если `llmstart-backend` в статусе **unhealthy** / `dependency failed`
+
+Сначала **логи** (там чаще всего видна причина):
+
+```bash
+docker logs llmstart-backend --tail 200
+```
+
+**Типовые причины:**
+
+1. **Падение в entrypoint до uvicorn** — [docker-entrypoint.sh](../../devops/backend/docker-entrypoint.sh) выполняет `alembic upgrade head`. Ошибка миграции (структура БД, сеть до `postgres`, неверные права) останавливает контейнер: в логах будет Traceback **Alembic** / `OperationalError` / `asyncpg`.  
+   - Если лог: **`ModuleNotFoundError: No module named 'psycopg2'`** — в образе **backend** в lock должна быть зависимость **`psycopg2-binary`** (Alembic в [migrations/env.py](../../backend/migrations/env.py) подменяет `+asyncpg` → `+psycopg2` для sync-движка). Обновите **образ** `…/backend` из свежего CI ([ghcr workflow](../../.github/workflows/ghcr.yml)) и снова `docker compose pull` / `up`.
+2. **Ошибка при старте приложения** (валидация [Settings](../../backend/app/config.py), подключение к БД) — в логах **uvicorn** / Python-исключение **до** приёма запросов; healthcheck на `/health` не проходит, пока процесс не слушает `8000`.
+3. **Неверный `backend/.env`** (битая строка, лишние кавычки, невалидные значения) — смотрите лог; для подключения к БД в Docker compose всё равно подставляет [переменные `DATABASE_URL` / `DOCKER_DATABASE_URL` в YAML](../../docker-compose.ghcr.yml) и [entrypoint](../../devops/backend/docker-entrypoint.sh), но ошибка в файле всё ещё может мешать загрузке env.
+
+**Доп. проверки** (пока контейнер не в постоянном `Restarting`):
+
+```bash
+docker inspect llmstart-backend --format 'Status={{.State.Status}} Exit={{.State.ExitCode}} OOM={{.State.OOMKilled}}'
+docker exec llmstart-backend /app/.venv/bin/python -c "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=5).read()"
+# в образе backend обычно **нет** curl; проверка как в healthcheck в [docker-compose.ghcr.yml](../../docker-compose.ghcr.yml)
+```
+
+Пустой `OPENROUTER_API_KEY` **не** должен сам по себе валить `/health` (при старте подставляется заглушка LLM, см. [lifespan в `main.py`](../../backend/app/main.py)) — в первую очередь смотрите **БД и миграции** по логам.
 
 ## 7. Фаервол и доступ снаружи
 

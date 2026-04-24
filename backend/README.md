@@ -19,7 +19,7 @@ uv run uvicorn app.main:app --host 127.0.0.1 --port 8000
 
 Если ошибка остаётся — временно отключите сканирование папки `.venv` в антивирусе или удалите каталог **`backend/.venv`** и выполните **`uv sync`** заново.
 
-**База данных:** только **PostgreSQL**. В **`backend/.env`** обязательна строка **`DATABASE_URL`** (`postgresql+asyncpg://...`). Миграции: **`make migrate-backend`** из корня репо или `cd backend && uv run alembic upgrade head` (нужен `uv sync --extra dev` для `psycopg2`).
+**База данных:** только **PostgreSQL**. В **`backend/.env`** обязательна строка **`DATABASE_URL`** (`postgresql+asyncpg://...`). Миграции: **`make migrate-backend`** из корня репо или `cd backend && uv run alembic upgrade head` (синхронный драйвер **`psycopg2-binary`** входит в основные зависимости для Alembic; `uv sync` без `dev` достаточен).
 
 Эндпоинты, которые ходят в БД (в т.ч. **`POST /api/v1/auth/dev-session`**), при недоступном Postgres возвращают **503** и тело `error.code = DATABASE_UNAVAILABLE` вместо «немого» 500. Поднимите БД (**`make db-up`** / **`.\tasks.ps1 db-up`** из корня) и проверьте **`GET /health/db`**.
 
